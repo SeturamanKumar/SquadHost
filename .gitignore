@@ -1,0 +1,46 @@
+# Node
+client/node_modules/
+client/.next/
+client/.env
+client/out/
+client/build/
+
+# Python
+server/node_modules/
+server/dist/
+server/.env
+server/__pycache__
+server/venv/
+server/*.py[cod]
+server/db.sqlite3
+
+# Terraform
+infrastructure/.terraform/
+infrastructure/.terraform.lock.hcl
+infrastructure/*.tfvars
+infrastructure/*.tfvars.json
+infrastructure/terraform.tfstate
+infrastructure/terraform.tfstate.backup
+terraform/*.tfstate
+terraform/*.tfstate.backup
+*.peminfrastructure/*.tfstate
+infrastructure/*.tfstate.backup
+
+# Ansible
+configuration/hosts.ini
+configuration/*.retry
+configuration/.vault_pass
+configuration/vars/secrets.yml
+
+# Global Ignores
+node_modules/
+.DS_Store
+.env
+.vscode/
+.idea/
+*.log
+.env.local
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
