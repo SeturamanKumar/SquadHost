@@ -7,6 +7,7 @@ class MinecraftServerSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'server_name',
+            'server_password',
             'mc_version',
             'difficulty',
             'max_players',
@@ -21,3 +22,6 @@ class MinecraftServerSerializer(serializers.ModelSerializer):
             'is_running',
             'created_at',
         ]
+        extra_kwargs = {
+            'server_password': {'write_only': True},
+        }

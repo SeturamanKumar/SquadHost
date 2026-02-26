@@ -6,6 +6,7 @@ class MinecraftServer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     server_name = models.CharField(max_length=100, unique=True)
+    server_password = models.CharField(max_length=128)
 
     mc_version = models.CharField(max_length=20, default="LATEST")
     difficulty = models.CharField(max_length=20, default="normal")
