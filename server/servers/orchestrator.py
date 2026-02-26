@@ -1,9 +1,13 @@
 import docker
 import time
 
-client = docker.from_env()
-
 def start_minecraft_server(server_name, port_number, mc_version="LATEST", allow_tlauncher=False, max_players=20, difficulty="normal"):
+    try:
+        client = docker.from_env()
+    except Exception as e:
+        print(f"CRITICAL ERROR: Docker is not running! Details: {e}")
+        return None
+
     print(f"Preparing to start {server_name} on port {port_number}")
 
     env_vars = {
@@ -15,6 +19,7 @@ def start_minecraft_server(server_name, port_number, mc_version="LATEST", allow_
         "DIFFICULTY": difficulty,
         "ENABLE_AUTOSTOP": "TRUE",
         "AUTOSTOP_TIMEOUT_EST": "300",
+        "AUTOSTOP_TIMEOUT_INIT": "300",
     }
 
     if allow_tlauncher:
@@ -31,10 +36,13 @@ def start_minecraft_server(server_name, port_number, mc_version="LATEST", allow_
             detach=True,
             environment=env_vars,
             ports={'25565/tcp': port_number},
-            remove=True,
+            volumes={
+                f'squadhost_{server_name}': {'bind': '/data', 'mode': 'rw'},
+            },
+            auto_remove=True,
         )
 
-        print(f"Success! Container {container.short_id} is booting woth max {max_players} on {difficulty} difficulty.")
+        print(f"Success! Container {container.short_id} is booting with max {max_players} players on {difficulty} difficulty.")
         return container
     
     except docker.errors.APIError as e:

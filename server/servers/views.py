@@ -5,9 +5,10 @@ from django.contrib.auth.hashers import make_password, check_password
 from .models import MinecraftServer
 from .serializers import MinecraftServerSerializer
 from .orchestrator import start_minecraft_server
+import docker
 
 def get_available_port():
-    last_server = MinecraftServer.objects.order_by('-port-number').first()
+    last_server = MinecraftServer.objects.order_by('-port_number').first()
     if last_server and last_server.port_number:
         return last_server.port_number + 1
     return 25565
@@ -66,11 +67,21 @@ def restart_server(request):
     if not check_password(password, server_instance.server_password):
         return Response({"error": "Incorrect password"}, status=status.HTTP_400_BAD_REQUEST)
     
-    if server_instance.is_running:
-        return Response({
-            "message": "Server is already running",
-            "port": server_instance.port_number
-        }, status=status.HTTP_200_OK)
+    if server_instance.is_running and server_instance.container_id:
+        try:
+            client = docker.from_env()
+            container = client.containers.get(server_instance.container_id)
+
+            if container.status == 'running':
+                return Response({
+                    "message": "Server is already running",
+                    "port": server_instance.port_number
+                }, status=status.HTTP_200_OK)
+            
+        except docker.errors.NotFound:
+            pass
+        except Exception as e:
+            pass
     
     assigned_port = get_available_port()
 
@@ -84,7 +95,6 @@ def restart_server(request):
     )
 
     if container:
-        server_instance.port_number = assigned_port
         server_instance.container_id = container.short_id
         server_instance.is_running = True
         server_instance.save()
