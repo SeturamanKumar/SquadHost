@@ -1,0 +1,42 @@
+:root {
+  --background: #121212;
+  --surface: #1e1e1e;
+  --primary: #4caf50;
+  --text-main: #ffffff;
+  --text-muted: #a0a0a0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-main);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.card {
+  background-color: var(--surface);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
