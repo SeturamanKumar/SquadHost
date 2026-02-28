@@ -31,6 +31,7 @@ def create_and_start_server(request):
             allow_tlauncher=server_instance.allow_tlauncher,
             max_players=server_instance.max_players,
             difficulty=server_instance.difficulty,
+            seed=server_instance.seed,
         )
 
         if container:
@@ -92,6 +93,7 @@ def restart_server(request):
         allow_tlauncher=server_instance.allow_tlauncher,
         max_players=server_instance.max_players,
         difficulty=server_instance.difficulty,
+        seed=server_instance.seed,
     )
 
     if container:

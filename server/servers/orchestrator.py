@@ -1,7 +1,7 @@
 import docker
 import time
 
-def start_minecraft_server(server_name, port_number, mc_version="LATEST", allow_tlauncher=False, max_players=20, difficulty="normal"):
+def start_minecraft_server(server_name, port_number, mc_version="LATEST", allow_tlauncher=False, max_players=10, difficulty="normal", seed=None):
     try:
         client = docker.from_env()
     except Exception as e:
@@ -21,6 +21,9 @@ def start_minecraft_server(server_name, port_number, mc_version="LATEST", allow_
         "AUTOSTOP_TIMEOUT_EST": "300",
         "AUTOSTOP_TIMEOUT_INIT": "300",
     }
+
+    if seed:
+        env_vars["SEED"] = seed
 
     if allow_tlauncher:
         env_vars["ONLINE_MODE"] = "FALSE"
