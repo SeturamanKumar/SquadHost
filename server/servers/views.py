@@ -110,3 +110,50 @@ def restart_server(request):
         return Response({
             "error": "Docker failed to start the container",
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def list_servers(request):
+    servers = MinecraftServer.objects.all().order_by('-created_at')
+
+    try:
+        client = docker.from_env()
+    except:
+        print("Docker is not running")
+        client = None
+
+    if client:
+        for server in servers:
+            if server.is_running and server.container_id:
+                try:
+                    container = client.containers.get(server.container_id)
+                    if container.status != 'running':
+                        server.is_running = False
+                        server.save()
+                except docker.errors.NotFound:
+                    server.is_running = False
+                    server.save()
+                except Exception as e:
+                    pass
+    serializer = MinecraftServerSerializer(servers, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+def delete_servers(request, pk):
+    try:
+        server_instance = MinecraftServer.objects.get(pk=pk)
+    except MinecraftServer.DoesNotExist:
+        return Response({ "error": "Server Not Found" }, status=status.HTTP_404_NOT_FOUND)
+    
+    if server_instance.container_id:
+        try:
+            client = docker.from_env()
+            container = client.containers.get(server_instance.container_id)
+            print(f"Sending stop command to {container.name}")
+            container.stop(timeout=20)
+        except docker.errors.NotFound:
+            print("Container already removed or not found")
+        except Exception as e:
+            print(f"Error stopping container: {e}")
+
+    server_instance.delete()
+    return Response({ "message": "Server deleted successfully!" }, status=status.HTTP_204_NO_CONTENT)

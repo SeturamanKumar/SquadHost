@@ -2,6 +2,16 @@
 'use client'
 import { useState, useEffect, use } from "react";
 
+interface ServerInstance {
+  id: string;
+  server_name: string;
+  mc_version: string;
+  difficulty: string;
+  max_players: number;
+  port_number: number;
+  is_running: Boolean;
+}
+
 export default function Home() {
 
   const [serverName, setServerName] = useState<string>('');
@@ -16,6 +26,21 @@ export default function Home() {
   const [assignedAddress, setAssignedAddressed] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
+  const [servers, setServers] = useState<ServerInstance[]>([]);
+
+  const fetchServers = async () => {
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/servers/list/');
+      if(response.ok) {
+        const data = await response.json();
+        setServers(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch the server list:", error);
+    }
+
+  }
 
   useEffect(() => {
 
@@ -39,6 +64,7 @@ export default function Home() {
     };
 
     fetchVersions();
+    fetchServers();
   }, []);
 
   const handleCreateServer = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,6 +102,56 @@ export default function Home() {
       setStatus(`Network Error: Could not reach Django backend...`);
     }
   };
+
+  const handleDelete = async (id: string) => {
+
+    if(!window.confirm("Are you sure you want to permenantly delete this server and its world")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/servers/delete/${id}/`, {
+        method: 'DELETE',
+      });
+
+      if(response.ok){
+        fetchServers();
+      } else {
+        alert("Failed to delete server.")
+      }
+    } catch (error) {
+      alert("Network Error: Could not reach backend.");
+    }
+  }
+
+  const handleRestart = async (targetServiceName: string) => {
+    const password = window.prompt(`Enter the admin password for ${targetServiceName} to restart it`);
+    if(!password) return;
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/servers/restart/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          server_name: targetServiceName,
+          server_password: password,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if(response.ok){
+        alert(`Success! Server is running on port ${data.server?.port_number || data.port}`);
+        fetchServers();
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      alert(`Network Error: Could not reach backend.`);
+    }
+  }
 
   const copyToClipboard = () => {
     if(assignedAddress) {
@@ -206,6 +282,51 @@ export default function Home() {
           )
         }
 
+      </section>
+
+      <section className="card" style={{ margin: '2rem 0', padding: '2rem'}}>
+        <h2>Active Servers</h2>
+        {
+          servers.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', marginTop: '1rem' }}>No servers</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+              {
+                servers.map((server) => (
+                  <div key={server.id} style={{ padding: '1.5rem', backgroundColor: '#2a2a2a', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #444' }}>
+                    <div>
+                      <h3 style={{ margin: '0 0 0.5rem 0', color: 'white' }}>{server.server_name}</h3>
+                      <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        <span>Version: {server.mc_version}</span>
+                        <span>Players: {server.max_players}</span>
+                        <span>Difficulty: {server.difficulty}</span>
+                      </div>
+                      <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: server.is_running ? '#4caf50' : '#f44336' }}></div>
+                        <code style={{ color: 'var(--primary)' }}>127.0.0.1:{server.port_number}</code>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button 
+                        onClick={() => handleRestart(server.server_name)}
+                        style={{ padding: '0.5rem 1rem', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        Restart
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(server.id)}
+                        style={{ padding: '0.5rem 1rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          )
+        }
       </section>
     </main>
   );
