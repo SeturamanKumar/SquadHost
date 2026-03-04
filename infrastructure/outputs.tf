@@ -12,3 +12,15 @@ output "rds_endpoint" {
     description = "The connection URL for the PostgreSQL database"
     value = aws_db_instance.postgres.endpoint
 }
+
+output "db_username" {
+    description = "The administrator username for the RDS postgresSQL database"
+    value = var.db_username
+    sensitive = true
+}
+
+output "db_password" {
+    description = "The administrator password for the RDS postgresSQL database"
+    value = var.db_password
+    sensitive = true
+}

@@ -1,0 +1,14 @@
+services:
+  frontend:
+    build: ./client
+    ports:
+      - "3000:3000"
+    restart: always
+
+  backend:
+    build: ./server
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: always

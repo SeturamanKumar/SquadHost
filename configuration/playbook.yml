@@ -1,0 +1,60 @@
+---
+- name: Configure SquadHost EC2 Enviornemnt
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install prerequisite packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - git
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      
+    - name: Install Docker Engine
+      apt:
+        name: docker-ce
+        state: latest
+
+    - name: Ensure Docker is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Clone the SquadHost repository
+      git:
+        repo: 'https://github.com/SeturamanKumar/SquadHost.git'
+        dest: /opt/SquadHost
+        version: main
+        force: yes
+
+    - name: Create backend .env file for Django & RDS
+      copy:
+        dest: "/opt/SquadHost/.env"
+        content: |
+          DATABASE_URL=postgres://{{ db_user }}:{{ db_password }}@{{ rds_endpoint }}:5432/postgres
+          SECRET_KEY=django-insecure-squadhost-automated-key
+          DEBUG=False
+
+    - name: Build and start the SquadHost application via Docker Compose
+      command: docker compose up -d --build
+      args:
+        chdir: /opt/SquadHost

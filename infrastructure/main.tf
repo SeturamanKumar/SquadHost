@@ -189,6 +189,22 @@ data "aws_ami" "ubuntu" {
     }
 }
 
+resource "tls_private_key" "squadhost_ssh_key" {
+    algorithm = "RSA"
+    rsa_bits = 4096
+}
+
+resource "aws_key_pair" "squadhost_key_pair" {
+    key_name = "squadhost-key"
+    public_key = tls_private_key.squadhost_ssh_key.public_key_openssh
+}
+
+resource "local_file" "squadhost_private_key" {
+    content = tls_private_key.squadhost_ssh_key.private_key_pem
+    filename = "${path.module}/squadhost-key.pem"
+    file_permission = "0600"
+}
+
 resource "aws_instance" "squadhost_server" {
     ami = "ami-03f4878755434977f"
     instance_type = "t3.small"
@@ -197,6 +213,8 @@ resource "aws_instance" "squadhost_server" {
     iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
     associate_public_ip_address = true
+
+    key_name = aws_key_pair.squadhost_key_pair.key_name
 
     tags = {
         Name = "Squadhost-Kamikaze-Node"
