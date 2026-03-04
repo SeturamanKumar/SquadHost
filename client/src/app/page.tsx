@@ -31,7 +31,8 @@ export default function Home() {
   const fetchServers = async () => {
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/servers/list/');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+      const response = await fetch(`${apiUrl}/api/servers/list/`);
       if(response.ok) {
         const data = await response.json();
         setServers(data);
@@ -74,7 +75,8 @@ export default function Home() {
     setCopied(false);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/servers/create/', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+      const response = await fetch(`${apiUrl}/api/servers/create/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,7 +112,8 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/servers/delete/${id}/`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+      const response = await fetch(`${apiUrl}/api/servers/create/api/servers/delete/${id}/`, {
         method: 'DELETE',
       });
 
@@ -129,7 +132,8 @@ export default function Home() {
     if(!password) return;
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/servers/restart/', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+      const response = await fetch(`${apiUrl}/api/servers/restart/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

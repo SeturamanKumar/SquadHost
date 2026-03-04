@@ -50,10 +50,11 @@
       copy:
         dest: "/opt/SquadHost/.env"
         content: |
-          DATABASE_URL=postgres://{{ db_user }}:{{ db_password }}@{{ rds_endpoint }}:5432/postgres
+          DATABASE_URL=postgres://{{ db_user }}:{{ db_password }}@{{ rds_endpoint }}/postgres
           SECRET_KEY={{ lookup('password', '/dev/null chars=ascii_letters,digits length=50') }}
           DEBUG=False
           ALLOWED_HOSTS={{ inventory_hostname }},localhost,127.0.0.1
+          NEXT_PUBLIC_API_URL=http://{{ inventory_hostname }}:8000
 
     - name: Build and start the SquadHost application via Docker Compose
       command: docker compose up -d --build
