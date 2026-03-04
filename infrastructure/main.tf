@@ -5,7 +5,7 @@ terraform {
             version = "~> 5.0"
         }
     }
-    backend "s3" {}
+    # backend "s3" {}
 }
 
 provider "aws" {
@@ -58,7 +58,7 @@ resource "aws_route_table_association" "public_1_assoc" {
 }
 
 resource "aws_route_table_association" "public_2_assoc" {
-    subnet_id = aws.subnet_id.public_2.id
+    subnet_id = aws_subnet.public_2.id
     route_table_id = aws_route_table.public_rt.id
 }
 
@@ -164,7 +164,7 @@ resource "aws_db_instance" "postgres" {
     identifier = "squadhost-db"
     allocated_storage = 20
     engine = "postgres"
-    engine_version = "16.3"
+    engine_version = "16"
     instance_class = "db.t3.micro"
     username = var.db_username
     password = var.db_password

@@ -1,6 +1,6 @@
 output "squadhost_server_ip" {
     description = "The public IP address of the Next.js/Django EC2 server"
-    value = aws_instance.sqaudhost_server.public_ip
+    value = aws_instance.squadhost_server.public_ip
 }
 
 output "s3_backup_bucket_name" {
@@ -10,5 +10,5 @@ output "s3_backup_bucket_name" {
 
 output "rds_endpoint" {
     description = "The connection URL for the PostgreSQL database"
-    value = aws_ab_instance.postgres.endpoint
+    value = aws_db_instance.postgres.endpoint
 }

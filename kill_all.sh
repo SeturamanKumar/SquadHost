@@ -2,7 +2,8 @@
 
 echo "--------INITATING SQUADHOST NUCLEAR TEARDOWN--------"
 
-cd terraform
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+cd "$SCRIPT_DIR/infrastructure" || { echo "❌ Failed to find infrastructure directory"; exit 1; }
 
 echo "Step 1: Destroying EC2, RDS, VPC and Backup S3 Bucket..."
 terraform destroy -auto-approve
@@ -28,4 +29,4 @@ echo "Step 3: Cleaning local workspace"
 rm -rf .terraform
 rm -f .terrafrom.lock.hcl
 
-echo "Teardown complete. Your aws billing is now $0.00"
+echo "Teardown complete. Your aws billing is now 0.00"
