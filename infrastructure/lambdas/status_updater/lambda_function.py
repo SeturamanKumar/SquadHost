@@ -2,7 +2,7 @@ import json
 import os
 import urllib.request
 
-def lambda_handler(event, centext):
+def lambda_handler(event, context):
     try:
         s3_record = event['Records'][0]['s3']
         file_key = s3_record['object']['key']

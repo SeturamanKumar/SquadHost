@@ -24,3 +24,9 @@ output "db_password" {
     value = var.db_password
     sensitive = true
 }
+
+output "webhook_secret" {
+    description = "The securely generated webhook password for Django and Lambda"
+    value = random_password.webhook_secret.result
+    sensitive = true
+}

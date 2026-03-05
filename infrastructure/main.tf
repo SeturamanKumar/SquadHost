@@ -5,7 +5,9 @@ terraform {
             version = "~> 5.0"
         }
     }
-    # backend "s3" {}
+    backend "s3" {
+        key = "squadhost/terraform.tfstate"
+    }
 }
 
 provider "aws" {
@@ -33,14 +35,14 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_subnet" "public_1" {
     vpc_id = aws_vpc.main.id
     cidr_block = "10.0.1.0/24"
-    availability_zone = "ap-south-1a"
+    availability_zone = "${var.aws_region}a"
     map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "public_2" {
     vpc_id = aws_vpc.main.id
     cidr_block = "10.0.2.0/24"
-    availability_zone = "ap-south-1b"
+    availability_zone = "${var.aws_region}b"
     map_public_ip_on_launch = true
 }
 
@@ -220,7 +222,7 @@ resource "local_file" "squadhost_private_key" {
 }
 
 resource "aws_instance" "squadhost_server" {
-    ami = "ami-03f4878755434977f"
+    ami = data.aws_ami.ubuntu.id
     instance_type = "t3.small"
     subnet_id = aws_subnet.public_1.id
     vpc_security_group_ids = [aws_security_group.ec2_sg.id]

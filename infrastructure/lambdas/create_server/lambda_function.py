@@ -10,6 +10,7 @@ def lambda_handler(event, context):
     body = json.loads(event.get('body', '{}'))
     server_name = body.get('server_name', 'default-server')
     s3_bucket = os.environ.get('S3_BACKUP_BUCKET')
+    worker_ami_id = os.environ.get('WORKER_AMI_ID')
 
     user_data_script = f"""#!/bin/bash
     apt-get update -y
@@ -74,7 +75,7 @@ def lambda_handler(event, context):
 
     try:
         response = ec2.run_instances(
-            ImageId='ami-03f4878755434977f',
+            ImageId=worker_ami_id,
             InstanceType='t3.small',
             MinCount=1,
             MaxCount=1,

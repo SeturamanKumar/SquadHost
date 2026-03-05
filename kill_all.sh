@@ -9,8 +9,8 @@ echo "Step 1: Destroying EC2, RDS, VPC and Backup S3 Bucket..."
 terraform destroy -auto-approve
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=$(aws configureget region)
-STATE_BUCKET_NAME="squadhost-tf-state-${AWS_ACCOUNT_ID}"
+AWS_REGION=$(aws configure get region)
+STATE_BUCKET_NAME="squadhost-tfstate-${AWS_ACCOUNT_ID}"
 
 echo "Step 2: Locating Terraform State Bucket (${STATE_BUCKET_NAME})..."
 
@@ -27,6 +27,6 @@ fi
 
 echo "Step 3: Cleaning local workspace"
 rm -rf .terraform
-rm -f .terrafrom.lock.hcl
+rm -f .terraform.lock.hcl
 
 echo "Teardown complete. Your aws billing is now 0.00"
