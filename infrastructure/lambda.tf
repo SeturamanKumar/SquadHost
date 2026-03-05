@@ -26,7 +26,7 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
         Statement = [
             {
                 Effect = "Allow"
-                Action = ["ec2:RunInstance", "ec2:CreateTags"]
+                Action = ["ec2:RunInstances", "ec2:CreateTags"]
                 Resource = "*"
             },
             {
@@ -46,7 +46,7 @@ resource "aws_lambda_function" "create_server_lambda" {
     runtime = "python3.12"
     source_code_hash = data.archive_file.create_server_zip.output_base64sha256
 
-    enviornment = {
+    enviornment {
         variables = {
             S3_BACKUP_BUCKET = aws_s3_bucket.squadhost_backup.bucket
         }
