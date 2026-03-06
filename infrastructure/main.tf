@@ -165,7 +165,12 @@ resource "aws_iam_role_policy" "kamikaze_policy" {
                 ]
             },
             {
-                Action = ["ec2:TerminateInstances", "rds:DeleteDBInstance"]
+                Action = ["ec2:TerminateInstances", "rds:DeleteDBInstance", "ec2:DescribeInstances"]
+                Effect = "Allow"
+                Resource = "*"
+            },
+            {
+                Action = ["lambda:InvokeFunction"]
                 Effect = "Allow"
                 Resource = "*"
             }

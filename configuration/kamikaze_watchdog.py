@@ -1,66 +1,89 @@
 import boto3
 import os
 import time
-import psycopg2
 import subprocess
-
-DB_HOST = os.environ.get('RDS_HOSTNAME')
-DB_NAME = os.environ.get('RDS_DB_NAME', 'postgres')
-DB_USER = os.environ.get('RDS_USERNAME')
-DB_PASS = os.environ.get('RDS_PASSWORD')
-DB_URL = f"postgres://{DB_USER}:{DB_PASS}@{DB_HOST}:5432/{DB_NAME}"
-STATE_BUCKET = os.environ.get('BACKUP_BUCKET_NAME')
-REGION = os.environ.get('AWS_REGION', 'ap-south-1')
+import logging
 
 MAX_INACTIVITY = 300
 CHECK_INTERVAL = 60
-inactive_timer = 0
+AWS_REGION = os.environ.get('AWS_REGION', 'ap-south-1')
 
-ec2 = boto3.client('ec2', region_name=REGION)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+ec2 = boto3.client('ec2', region_name=AWS_REGION)
+rds = boto3.client('rds', region_name=AWS_REGION)
 
 def is_system_active():
     try:
-        conn = psycopg2.connect(DB_URL)
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM servers_minecraftserver WHERE status != 'OFFLINE';")
-        db_active = cur.fetchone()[0] > 0
-        cur.close()
-        conn.close()
-        if db_active: return True
+        workers = ec2.describe_instances(
+            Filters=[
+                {'Name': 'tag:Name', 'Values': ['squadhost-worker-*']},
+                {'Name': 'instance-state-name', 'Values': ['pending', 'running']}
+            ]
+        )
+
+        worker_count = sum(len(r['Instances']) for r in workers['Reservations'])
+        return worker_count > 0
     except Exception as e:
-        print(f"DB checked failed: {e}")
+        logger.error(f"EC2 check failed: {e}")
+        return True
+    
+def backup_database():
+    try:
+        host = os.environ.get('RDS_HOSTNAME', '').split(':')[0]
+        user = os.environ.get('RDS_USERNAME')
+        password = os.environ.get('RDS_PASSWORD')
+        bucket = os.environ.get('BACKUP_BUCKET_NAME')
+        db_name = os.environ.get('RDS_DB_NAME', 'postgres')
 
-    workers = ec2.describe_instances(
-        Filters=[
-            {'Name': 'tag:Name', 'Values': ['squadhost-worker-*']},
-            {'Name': 'instance-state-name', 'Values': ['running', 'pending']}
-        ]
-    )
-    return len(workers['Reservations']) > 0
-
-while True:
-    if is_system_active():
-        inactive_timer = 0
-    else:
-        inactive_timer += CHECK_INTERVAL
-        print(f"Idle: {inactive_timer}/{MAX_INACTIVITY}")
-
-    if inactive_timer >= MAX_INACTIVITY:
-        print("INITIATIING SOFT-TERMINATION BACKUP...")
-
-        dump_cmd = f"PGPASSWORD='{DB_PASS}' pg_dump -h {DB_HOST} -U {DB_USER} -d {DB_NAME} > /tmp/db_restore.sql"
-        subprocess.run(dump_cmd, shell=True)
-
-        upload_cmd = f"aws s3 cp /tmp/db_restore.sql s3://{STATE_BUCKET}/backups/db_restore.sql"
-        subprocess.run(upload_cmd, shell=True)
-
-        os.chdir("/opt/SquadHost/infrastructure")
+        os.environ['PGPASSWORD'] = password
         subprocess.run([
-            "terraform", "destroy",
-            "-target=aws_db_instance.postgres",
-            "-target=aws_instance.squadhost_server",
-            "-auto-approve"
-        ])
-        break
+            'pg_dump',
+            '-h', host,
+            '-U', user,
+            '-F', 'c',
+            '-d', db_name,
+            '-f', '/tmp/db_store.sql'
+        ], check=True)
 
-    time.sleep(CHECK_INTERVAL)
+        s3 = boto3.client('s3')
+        s3.upload_file('/tmp/db_restore.sql', bucket, 'backups/db_restore.sql')
+        logger.info("Database backed up successfully")
+    except Exception as e:
+        logger.error(f"Backup Failed: {e}")
+
+def self_destruct():
+    try:
+        logger.info("INITIATING SOFT-TERMINATION BACKUP")
+        rds.delete_db_instance(
+            DBInstanceIdentifier='squadhost-db',
+            SkipFinalSnapshot=True
+        )
+
+        masters = ec2.describe_instances(
+            Filters=[
+                {'Name': 'tag:Name', 'Values': ['Squadhost-Kamikaze-Node']},
+                {'Name': 'instance-state-name', 'Values': ['running']}
+            ]
+        )
+
+        for res in masters['Reservations']:
+            for inst in res['Instances']:
+                ec2.terminate_instances(InstanceIds=[inst['InstanceId']])
+    except Exception as e:
+        logger.error(f"Self destruct failed: {e}")
+
+if __name__ == "__main__":
+    inactive_time = 0
+    while True:
+        time.sleep(CHECK_INTERVAL)
+        if is_system_active():
+            inactive_time = 0
+        else:
+            inactive_time += CHECK_INTERVAL
+            logger.info(f"Idle: {inactive_time}/{MAX_INACTIVITY}")
+
+        if inactive_time >= MAX_INACTIVITY:
+            backup_database()
+            self_destruct()

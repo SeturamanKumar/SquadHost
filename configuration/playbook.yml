@@ -99,6 +99,10 @@
       args:
         chdir: /opt/SquadHost
       become: yes
+      register: migrate_result
+      until: migrate_result.rc == 0
+      retries: 12
+      delay: 10
 
     - name: Ensure the Kamikaze Watchdog is executable
       ansible.builtin.file:

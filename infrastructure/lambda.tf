@@ -31,6 +31,11 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
             },
             {
                 Effect = "Allow"
+                Action = ["iam:PassRole"]
+                Resource = "*"
+            },
+            {
+                Effect = "Allow"
                 Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
                 Resource = "arn:aws:logs:*:*:*"
             }
@@ -45,6 +50,8 @@ resource "aws_lambda_function" "create_server_lambda" {
     handler = "lambda_function.lambda_handler"
     runtime = "python3.12"
     source_code_hash = data.archive_file.create_server_zip.output_base64sha256
+
+    timeout = 60
 
     environment {
         variables = {

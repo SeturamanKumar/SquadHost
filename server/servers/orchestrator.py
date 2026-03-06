@@ -14,7 +14,7 @@ def orchestrate_server_action(server_id, action="START"):
 
         payload = {
             "body": json.dumps({
-                "server_name": server.name,
+                "server_name": server.server_name,
                 "action": action
             })
         }
@@ -28,13 +28,13 @@ def orchestrate_server_action(server_id, action="START"):
         res_payload = json.loads(response['Payload'].read().decode('utf-8'))
 
         if response.get('FunctionError'):
-            logger.error(f"Lambda Error for {server.name}: {res_payload}")
+            logger.error(f"Lambda Error for {server.server_name}: {res_payload}")
             return False, res_payload.get('errorMessage', 'Unknown Lambda Error')
         
         server.status = 'STARTING'
         server.save()
         
-        return True, "Server {server.name} is being provisioned in the cloud"
+        return True, f"Server {server.server_name} is being provisioned in the cloud"
     
     except MinecraftServer.DoesNotExist:
         return False, "Server not found in database"

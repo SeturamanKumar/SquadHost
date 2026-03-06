@@ -4,8 +4,7 @@ from rest_framework import status
 from django.contrib.auth.hashers import make_password, check_password
 from .models import MinecraftServer
 from .serializers import MinecraftServerSerializer
-from .orchestrator import start_minecraft_server
-import docker
+from .orchestrator import orchestrate_server_action
 
 def get_available_port():
     last_server = MinecraftServer.objects.order_by('-port_number').first()
@@ -24,22 +23,9 @@ def create_and_start_server(request):
         server_instance = serializer.save(server_password=hashed_password)
         assigned_port = get_available_port()
 
-        container = start_minecraft_server(
-            server_name=server_instance.server_name,
-            port_number=assigned_port,
-            mc_version=server_instance.mc_version,
-            allow_tlauncher=server_instance.allow_tlauncher,
-            max_players=server_instance.max_players,
-            difficulty=server_instance.difficulty,
-            seed=server_instance.seed,
-        )
+        success, message = orchestrate_server_action(server_instance.id, "START")
 
-        if container:
-            server_instance.port_number = assigned_port
-            server_instance.container_id = container.short_id
-            server_instance.is_running = True
-            server_instance.save()
-
+        if success:
             return Response({
                 "message": "Server Booted successfully!",
                 "server": MinecraftServerSerializer(server_instance).data,
@@ -48,7 +34,7 @@ def create_and_start_server(request):
         else:
             server_instance.delete()
             return Response(
-                {"error": "Docker failed to start the container"},
+                {"error": message},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
@@ -68,72 +54,21 @@ def restart_server(request):
     if not check_password(password, server_instance.server_password):
         return Response({"error": "Incorrect password"}, status=status.HTTP_400_BAD_REQUEST)
     
-    if server_instance.is_running and server_instance.container_id:
-        try:
-            client = docker.from_env()
-            container = client.containers.get(server_instance.container_id)
+    success, message = orchestrate_server_action(server_instance.id, "START")
 
-            if container.status == 'running':
-                return Response({
-                    "message": "Server is already running",
-                    "port": server_instance.port_number
-                }, status=status.HTTP_200_OK)
-            
-        except docker.errors.NotFound:
-            pass
-        except Exception as e:
-            pass
-    
-    assigned_port = get_available_port()
-
-    container = start_minecraft_server(
-        server_name=server_instance.server_name,
-        port_number=server_instance.port_number,
-        mc_version=server_instance.mc_version,
-        allow_tlauncher=server_instance.allow_tlauncher,
-        max_players=server_instance.max_players,
-        difficulty=server_instance.difficulty,
-        seed=server_instance.seed,
-    )
-
-    if container:
-        server_instance.container_id = container.short_id
-        server_instance.is_running = True
-        server_instance.save()
-
+    if success:
         return Response({
-            "message": "Server Restarted Successfully!!!",
+            "message": "Server Restarted Successfully",
             "server": MinecraftServerSerializer(server_instance).data,
         }, status=status.HTTP_200_OK)
-    
     else:
         return Response({
-            "error": "Docker failed to start the container",
+            "message": message,
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def list_servers(request):
     servers = MinecraftServer.objects.all().order_by('-created_at')
-
-    try:
-        client = docker.from_env()
-    except:
-        print("Docker is not running")
-        client = None
-
-    if client:
-        for server in servers:
-            if server.is_running and server.container_id:
-                try:
-                    container = client.containers.get(server.container_id)
-                    if container.status != 'running':
-                        server.is_running = False
-                        server.save()
-                except docker.errors.NotFound:
-                    server.is_running = False
-                    server.save()
-                except Exception as e:
-                    pass
     serializer = MinecraftServerSerializer(servers, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -144,16 +79,7 @@ def delete_servers(request, pk):
     except MinecraftServer.DoesNotExist:
         return Response({ "error": "Server Not Found" }, status=status.HTTP_404_NOT_FOUND)
     
-    if server_instance.container_id:
-        try:
-            client = docker.from_env()
-            container = client.containers.get(server_instance.container_id)
-            print(f"Sending stop command to {container.name}")
-            container.stop(timeout=20)
-        except docker.errors.NotFound:
-            print("Container already removed or not found")
-        except Exception as e:
-            print(f"Error stopping container: {e}")
+    orchestrate_server_action(server_instance.id, "STOP")
 
     server_instance.delete()
-    return Response({ "message": "Server deleted successfully!" }, status=status.HTTP_204_NO_CONTENT)
+    return Response({ "message": "Server Deleted Successfully"}, status=status.HTTP_204_NO_CONTENT)
