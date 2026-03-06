@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from .models import MinecraftServer
 from .serializers import MinecraftServerSerializer
 from .orchestrator import orchestrate_server_action
+import os
 
 def get_available_port():
     last_server = MinecraftServer.objects.order_by('-port_number').first()
@@ -72,14 +73,47 @@ def list_servers(request):
     serializer = MinecraftServerSerializer(servers, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-@api_view(['DELETE'])
-def delete_servers(request, pk):
-    try:
-        server_instance = MinecraftServer.objects.get(pk=pk)
-    except MinecraftServer.DoesNotExist:
-        return Response({ "error": "Server Not Found" }, status=status.HTTP_404_NOT_FOUND)
+@api_view(['POST'])
+def webhook_update_status(request):
+    received_secret = request.data.get('webhook_secret')
+    expected_secret = os.environ.get('WEBHOOK_SECRET')
+
+    if received_secret != expected_secret:
+        return Response({"error": "Unauthorized Webhook"}, status=status.HTTP_401_UNAUTHORIZED)
     
+    server_name = request.data.get('server_name')
+
+    try:
+        server = MinecraftServer.objects.get(server_name=server_name)
+        
+        if request.data.get('status'):
+            server.status = request.data.get('status')
+        if request.data.get('ip_address'):
+            server.server_ip = request.data.get('ip_address')
+
+        server.name()
+        return Response({"message": "Status updated successfully via webhook!"}, status=status.HTTP_200_OK)
+    except MinecraftServer.DoesNotExist:
+        return Response({"error": "Server Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    
+@api_view(['POST', 'DELETE'])
+def delete_servers(request, pk=None):
+    if request.method == 'POST':
+        server_name = request.data.get('server_name')
+        password = request.data.get('server_password')
+        try:
+            server_instance = MinecraftServer.objects.get(server_name=server_name)
+            if not check_password(password, server_instance.server_password):
+                return Response({"error": "Incorrect Password"}, status=status.HTTP_400_BAD_REQUEST)
+        except MinecraftServer.DoesNotExist:
+            return Response({"error": "Server Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        try:
+            server_instance = MinecraftServer.objects.get(pk=pk)
+        except MinecraftServer.DoesNotExist:
+            return Response({"error": "Server Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        
     orchestrate_server_action(server_instance.id, "STOP")
 
     server_instance.delete()
-    return Response({ "message": "Server Deleted Successfully"}, status=status.HTTP_204_NO_CONTENT)
+    return Response({"message": "Server deleted successfully!"}, status=status.HTTP_200_OK)

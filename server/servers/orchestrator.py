@@ -31,8 +31,9 @@ def orchestrate_server_action(server_id, action="START"):
             logger.error(f"Lambda Error for {server.server_name}: {res_payload}")
             return False, res_payload.get('errorMessage', 'Unknown Lambda Error')
         
-        server.status = 'STARTING'
-        server.save()
+        if action == "START":
+            server.status = 'STARTING'
+            server.save()
         
         return True, f"Server {server.server_name} is being provisioned in the cloud"
     

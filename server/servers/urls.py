@@ -6,4 +6,5 @@ urlpatterns = [
     path('restart/', views.restart_server, name='restart-server'),
     path('list/', views.list_servers, name='list-server'),
     path('delete/<uuid:pk>/', views.delete_servers, name='delete-server'),
+    path('webhook/status', views.webhook_update_status, name='webhook-update-status'),
 ]
