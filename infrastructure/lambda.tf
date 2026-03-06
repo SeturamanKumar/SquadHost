@@ -1,18 +1,3 @@
-data "aws_ami" "ubuntu" {
-    most_recent = true
-    owners = ["099720109477"]
-
-    filter {
-        name = "name"
-        values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-    }
-
-    filter {
-        name = "virtualization-type"
-        values = ["hvm"]
-    }
-}
-
 data "archive_file" "create_server_zip" {
     type = "zip"
     source_dir = "${path.module}/lambdas/create_server"
@@ -101,7 +86,7 @@ resource "aws_iam_instance_profile" "ec2_worker_profile" {
     role = aws_iam_role.ec2_worker_role.name
 }
 
-data "archive_file" "lambda_s3_role" {
+data "archive_file" "status_updater_zip" {
     type ="zip"
     source_dir = "${path.module}/lambdas/status_updater"
     output_path = "${path.module}/lambdas/status_updater.zip"

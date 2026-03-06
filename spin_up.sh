@@ -19,7 +19,10 @@ else
 fi
 
 echo "Step 1: Provisioning AWS infrastructure"
-terraform init -backend-config="bucket=$STATE_BUCKET"
+terraform init \
+    -backend-config="bucket=$STATE_BUCKET" \
+    -backend-config="key=terraform.tfstate" \
+    -backend-config="region=${MASTER_REGION}"
 terraform apply -auto-approve
 
 echo "Step 2: Extracting connection details..."

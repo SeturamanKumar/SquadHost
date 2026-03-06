@@ -12,8 +12,8 @@ DB_URL = f"postgres://{DB_USER}:{DB_PASS}@{DB_HOST}:5432/{DB_NAME}"
 STATE_BUCKET = os.environ.get('BACKUP_BUCKET_NAME')
 REGION = os.environ.get('AWS_REGION', 'ap-south-1')
 
-MAX_INACTIVITY = 3600
-CHECK_INTERVAL = 300
+MAX_INACTIVITY = 300
+CHECK_INTERVAL = 60
 inactive_timer = 0
 
 ec2 = boto3.client('ec2', region_name=REGION)

@@ -51,7 +51,7 @@ def lambda_handler(event, context):
             INACTIVE_MINUTES=0
         fi
 
-        if [ $INACTIVE_MINUTES -ge 5 ]; then
+        if [ $INACTIVE_MINUTES -ge 2 ]; then
             docker stop {server_name}
 
             cd /minecraft/data
