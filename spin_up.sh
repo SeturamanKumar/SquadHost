@@ -44,6 +44,6 @@ export ANSIBLE_HOST_KEY_CHECKING=False
 ansible-playbook -i "$SERVER_IP," "$SCRIPT_DIR/configuration/playbook.yml" \
     --private-key "$SCRIPT_DIR/infrastructure/squadhost-key.pem" \
     -u ubuntu \
-    --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC"
+    --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC account_id=$ACCOUNT_ID"
 
 echo "Squadhost is officially live! Access the dashboard at http://$SERVER_IP:3000"

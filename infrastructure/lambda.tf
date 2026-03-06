@@ -63,7 +63,7 @@ resource "aws_lambda_function" "create_server_lambda" {
 
     environment {
         variables = {
-            S3_BACKUP_BUCKET = aws_s3_bucket.squadhost_backup.bucket
+            S3_BACKUP_BUCKET = aws_s3_bucket.squadhost_backups.bucket
             WORKER_AMI_ID = data.aws_ami.ubuntu.id
         }
     }
@@ -91,7 +91,7 @@ resource "aws_iam_role_policy" "ec2_worker_s3_policy" {
         Statement = [{
             Effect = "Allow"
             Action = ["s3:PutObject", "s3:GetObject", "s3:ListBucket"]
-            Resource = [aws_s3_bucket.squadhost_backup.arn, "${aws_s3_bucket.squadhost_backup.arn}/*"]
+            Resource = [aws_s3_bucket.squadhost_backups.arn, "${aws_s3_bucket.squadhost_backups.arn}/*"]
         }]
     })
 }
@@ -168,15 +168,15 @@ resource "aws_lambda_permission" "allow_s3" {
     action = "lambda:InvokeFunction"
     function_name = aws_lambda_function.status_updater_lambda.function_name
     principal = "s3.amazonaws.com"
-    source_arn = aws_s3_bucket.squadhost_backup.arn
+    source_arn = aws_s3_bucket.squadhost_backups.arn
 }
 
 resource "aws_s3_bucket_notification" "bucket_notification" {
-    bucket = aws_s3_bucket.squadhost_backup.id
+    bucket = aws_s3_bucket.squadhost_backups.id
 
     lambda_function {
         lambda_function_arn = aws_lambda_function.status_updater_lambda.arn
-        events = ["s3:ObjectCreated:*]
+        events = ["s3:ObjectCreated:*"]
         filter_suffix = ".zip"
     }
 
