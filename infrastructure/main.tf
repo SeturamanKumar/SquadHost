@@ -14,6 +14,8 @@ provider "aws" {
     region = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "random_id" "bucket_suffix" {
     byte_length = 8
 }
@@ -155,7 +157,12 @@ resource "aws_iam_role_policy" "kamikaze_policy" {
             {
                 Action = ["s3:PutObject", "s3:GetObject", "s3:ListBucket"]
                 Effect = "Allow"
-                Resource = [aws_s3_bucket.squadhost_backups.arn, "${aws_s3_bucket.squadhost_backups.arn}/*"]
+                Resource = [
+                    aws_s3_bucket.squadhost_backups.arn, 
+                    "${aws_s3_bucket.squadhost_backups.arn}/*",
+                    "arn:aws:s3:::squadhost-tfstate-${data.aws_caller_identity.current.account_id}",
+                    "arn:aws:s3:::squadhost-tfstate-${data.aws_caller_identity.current.account_id}/*",
+                ]
             },
             {
                 Action = ["ec2:TerminateInstances", "rds:DeleteDBInstance"]

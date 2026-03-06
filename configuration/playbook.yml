@@ -63,17 +63,17 @@
         chdir: /opt/SquadHost
 
     - name: Check for existing Database Backup in S3
-      command: "aws s3 ls s3://{{ STATE_BUCKET }}/backups/db_restore.sql"
+      command: "aws s3 ls s3://{{ backup_bucket }}/backups/db_restore.sql"
       register: db_backup_exists
       ignore_errors: yes
 
     - name: Restore Database from S3 if backup exists
       shell: |
-        aws s3 cp s3://{{ STATE_BUCKET }}/backups/db_restore.sql /tmp/restore.sql
+        aws s3 cp s3://{{ backup_bucket }}/backups/db_restore.sql /tmp/restore.sql
         PGPASSWORD={{ db_password }} psql -h {{ rds_endpoint }} -U {{ db_user }} -d postgres -f /tmp/restore.sql
       when: db_backup_exists.rc == 0
       become: yes
 
     - name: Start the Macro-Kamikaze Watchdog
-      shell: "RDS_HOSTNAME={{ rds_endpoint }} RDS_USERNAME={{ db_user }} RDS_PASSWORD={{ db_password }} nohup python3 /opt/SquadHost/configuration/kamikaze_watchdog.py > /var/log/watchdog.log 2>&1 &"
+      shell: "RDS_HOSTNAME={{ rds_endpoint }} RDS_USERNAME={{ db_user }} RDS_PASSWORD={{ db_password }} BACKUP_BUCKET_NAME={{ backup_bucket }} nohup python3 /opt/SquadHost/configuration/kamikaze_watchdog.py > /var/log/watchdog.log 2>&1 &"
       become: yes

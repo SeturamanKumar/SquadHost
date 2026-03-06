@@ -28,6 +28,7 @@ DB_ENDPOINT=$(terraform output -raw rds_endpoint)
 DB_USER=$(terraform output -raw db_username)
 DB_PASS=$(terraform output -raw db_password)
 WEBHOOK_SEC=$(terraform output -raw webhook_secret)
+BACKUP_BUCKET=$(terraform output -raw s3_backup_bucket_name)
 
 echo "Infrastructure built! EC2 server IP: $SERVER_IP"
 
@@ -44,6 +45,6 @@ export ANSIBLE_HOST_KEY_CHECKING=False
 ansible-playbook -i "$SERVER_IP," "$SCRIPT_DIR/configuration/playbook.yml" \
     --private-key "$SCRIPT_DIR/infrastructure/squadhost-key.pem" \
     -u ubuntu \
-    --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC account_id=$ACCOUNT_ID"
+    --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC account_id=$ACCOUNT_ID backup_bucket=$BACKUP_BUCKET"
 
 echo "Squadhost is officially live! Access the dashboard at http://$SERVER_IP:3000"

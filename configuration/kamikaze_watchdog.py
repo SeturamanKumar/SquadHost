@@ -9,7 +9,7 @@ DB_NAME = os.environ.get('RDS_DB_NAME', 'postgres')
 DB_USER = os.environ.get('RDS_USERNAME')
 DB_PASS = os.environ.get('RDS_PASSWORD')
 DB_URL = f"postgres://{DB_USER}:{DB_PASS}@{DB_HOST}:5432/{DB_NAME}"
-STATE_BUCKET = os.environ.get('STATE_BUCKET_NAME')
+STATE_BUCKET = os.environ.get('BACKUP_BUCKET_NAME')
 REGION = os.environ.get('AWS_REGION', 'ap-south-1')
 
 MAX_INACTIVITY = 3600
