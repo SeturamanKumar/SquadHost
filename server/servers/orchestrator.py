@@ -31,6 +31,10 @@ def orchestrate_server_action(server_id, action="START"):
             logger.error(f"Lambda Error for {server.server_name}: {res_payload}")
             return False, res_payload.get('errorMessage', 'Unknown Lambda Error')
         
+        if res_payload.get('statusCode') != 200:
+            logger.error(f"Lambda Logical Error for {server.server_name}: {res_payload}")
+            return False, res_payload.get('body', 'Unkown AWS Logic Error')
+        
         if action == "START":
             server.status = 'STARTING'
             server.save()

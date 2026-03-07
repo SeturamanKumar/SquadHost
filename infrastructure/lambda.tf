@@ -26,7 +26,7 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
         Statement = [
             {
                 Effect = "Allow"
-                Action = ["ec2:RunInstances", "ec2:CreateTags"]
+                Action = ["ec2:RunInstances", "ec2:CreateTags", "ec2:DescribeInstances"]
                 Resource = "*"
             },
             {
@@ -57,6 +57,8 @@ resource "aws_lambda_function" "create_server_lambda" {
         variables = {
             S3_BACKUP_BUCKET = aws_s3_bucket.squadhost_backups.bucket
             WORKER_AMI_ID = data.aws_ami.ubuntu.id
+            DJANGO_WEBHOOK_URL = "http://${aws_instance.squadhost_server.public_ip}:8000/webhook/status"
+            WEBHOOK_SECRET = random_password.webhook_secret.result
         }
     }
 }

@@ -69,7 +69,7 @@ export default function Home() {
   }, []);
 
   const handleCreateServer = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault;
+    e.preventDefault();
     setStatus('Booting server... Please wait...');
     setAssignedAddressed('');
     setCopied(false);

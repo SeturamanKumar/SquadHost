@@ -2,6 +2,7 @@ import boto3
 import json
 import base64
 import os
+import urllib.request
 
 def lambda_handler(event, context):
     region = os.environ.get('AWS_REGION', 'ap-south-1')
@@ -11,6 +12,9 @@ def lambda_handler(event, context):
     server_name = body.get('server_name', 'default-server')
     s3_bucket = os.environ.get('S3_BACKUP_BUCKET')
     worker_ami_id = os.environ.get('WORKER_AMI_ID')
+
+    django_api_url = os.environ.get("DJANGO_WEBHOOK_URL")
+    webhook_secret = os.environ.get("WEBHOOK_SECRET")
 
     user_data_script = f"""#!/bin/bash
     apt-get update -y
@@ -79,7 +83,7 @@ def lambda_handler(event, context):
             InstanceType='t3.small',
             MinCount=1,
             MaxCount=1,
-            KeyName='sqaudhost-key',
+            KeyName='squadhost-key',
             UserData=user_data_script,
             IamInstanceProfile={'Name': 'squadhost_worker_profile'},
             TagSpecifications=[{
@@ -90,11 +94,28 @@ def lambda_handler(event, context):
 
         instance_id = response['Instances'][0]['InstanceId']
 
+        waiter = ec2.get_waiter('instance_running')
+        waiter.wait(InstanceIds=[instance_id], WaiterConfig={'Delay': 2, 'MaxAttempts': 30})
+
+        instances = ec2.describe_instances(InstanceIds=[instance_id])
+        public_ip = instances['Reservations'][0]['Instances'][0].get('PublicIpAddress')
+
+        if django_api_url and webhook_secret and public_ip:
+            payload = json.dumps({
+                'server_name': server_name,
+                'status': 'ONLINE',
+                'ip_address': public_ip,
+                'webhook_secret': webhook_secret,
+            }).encode('utf-8')
+
+            req = urllib.request.Request(django_api_url, data=payload, headers={'Content-Type': 'application/json'})
+            urllib.request.urlopen(req)
+
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'message': 'Minecraft Worker Node provisioning started',
-                'instance_id': instance_id,
+                'message': 'Provisioning Started',
+                'ip': public_ip,
             })
         }
     
