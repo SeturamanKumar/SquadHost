@@ -9,11 +9,21 @@ def lambda_handler(event, context):
 
     body = json.loads(event.get('body', '{}'))
     server_name = body.get('server_name', 'default-server')
+
+    mc_version = body.get('mc_version', 'LATEST')
+    difficulty = body.get('difficulty', 'normal')
+    max_players = body.get('max_players', 10)
+    allow_tlauncher = body.get('allow_tlauncher', False)
+    seed = body.get('seed', '')
+
     s3_bucket = os.environ.get('S3_BACKUP_BUCKET')
     worker_ami_id = os.environ.get('WORKER_AMI_ID')
 
     sg_id = os.environ.get('SECURITY_GROUP_ID')
     subnet_id = os.environ.get('SUBNET_ID')
+
+    online_mode = "FALSE" if allow_tlauncher else "TRUE"
+    seed_env = f"-e SEED={seed} \\" if seed else "\\"
 
     user_data_script = f"""#!/bin/bash
     apt-get update -y
@@ -32,6 +42,11 @@ def lambda_handler(event, context):
         -e EULA=TRUE \\
         -e RCON_PASSWORD=kamikaze \\
         -e ENABLE_RCON=true \\
+        -e VERSION={mc_version} \\
+        -e DIFFICULTY={difficulty} \\
+        -e MAX_PLAYERS={max_players} \\
+        -e ONLINE_MODE={online_mode} \\
+        {seed_env}
         -p 25565:25565 \\
         -p 25575:25575 \\
         -v /minecraft/data:/data \\

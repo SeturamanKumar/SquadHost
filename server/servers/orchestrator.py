@@ -15,7 +15,12 @@ def orchestrate_server_action(server_id, action="START"):
         payload = {
             "body": json.dumps({
                 "server_name": server.server_name,
-                "action": action
+                "action": action,
+                "mc_version": server.mc_version,
+                "difficulty": server.difficulty,
+                "max_players": server.max_players,
+                "allow_tlauncher": server.allow_tlauncher,
+                "seed": server.seed,
             })
         }
 

@@ -44,7 +44,7 @@ def backup_database():
             '-U', user,
             '-F', 'c',
             '-d', db_name,
-            '-f', '/tmp/db_store.sql'
+            '-f', '/tmp/db_restore.sql'
         ], check=True)
 
         s3 = boto3.client('s3')

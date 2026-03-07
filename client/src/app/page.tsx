@@ -68,6 +68,14 @@ export default function Home() {
     fetchServers();
   }, []);
 
+  useEffect(() => {
+    const newlyCreated = servers.find(s => s.server_name === serverName);
+    if(newlyCreated && newlyCreated.server_ip){
+      setAssignedAddressed(newlyCreated.server_ip);
+      setStatus('Success! Server is booting. It may take upto 5-6 minutes!')
+    }
+  }, [servers, serverName])
+
   const handleCreateServer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus('Booting server... Please wait...');
