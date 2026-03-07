@@ -15,7 +15,7 @@ class MinecraftServer(models.Model):
 
     seed = models.CharField(max_length=255, null=True, blank=True)
 
-    port_number = models.IntegerField(unique=True, null=True, blank=True)
+    server_ip = models.CharField(max_length=50, null=True, blank=True)
     container_id = models.CharField(max_length=100, null=True, blank=True)
     is_running = models.BooleanField(default=False)
 

@@ -8,8 +8,8 @@ interface ServerInstance {
   mc_version: string;
   difficulty: string;
   max_players: number;
-  port_number: number;
   is_running: Boolean;
+  server_ip?: string;
 }
 
 export default function Home() {
@@ -96,7 +96,8 @@ export default function Home() {
 
       if(response.ok) {
         setStatus(`Success! Server is running on port`);
-        setAssignedAddressed(`127.0.0.1:${data.server.port_number}`);
+        setAssignedAddressed(`Pending AWS IP Assignment...`);
+        fetchServers();
       } else {
         setStatus(`Error ${data.error || 'Failed to start'}`);
       }
@@ -105,22 +106,28 @@ export default function Home() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-
-    if(!window.confirm("Are you sure you want to permenantly delete this server and its world")) {
-      return;
-    }
+  const handleDelete = async (targetServiceName: string) => {
+    const password = window.prompt(`Enter the admin password for ${targetServiceName} to permanently delete it:`);
+    if (!password) return;
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
-      const response = await fetch(`${apiUrl}/api/servers/create/api/servers/delete/${id}/`, {
-        method: 'DELETE',
+      const response = await fetch(`${apiUrl}/api/servers/delete/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          server_name: targetServiceName,
+          server_password: password,
+        }),
       });
 
       if(response.ok){
         fetchServers();
       } else {
-        alert("Failed to delete server.")
+        const data = await response.json();
+        alert(`Failed to Delete Server: ${data.error}`);
       }
     } catch (error) {
       alert("Network Error: Could not reach backend.");
@@ -307,7 +314,7 @@ export default function Home() {
                       </div>
                       <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: server.is_running ? '#4caf50' : '#f44336' }}></div>
-                        <code style={{ color: 'var(--primary)' }}>127.0.0.1:{server.port_number}</code>
+                        <code style={{ color: 'var(--primary)' }}>{server.server_ip ? `${server.server_ip}:25565` : 'Pending AWS IP...'}</code>
                       </div>
                     </div>
 
@@ -319,7 +326,7 @@ export default function Home() {
                         Restart
                       </button>
                       <button 
-                        onClick={() => handleDelete(server.id)}
+                        onClick={() => handleDelete(server.server_name)}
                         style={{ padding: '0.5rem 1rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
                       >
                         Delete

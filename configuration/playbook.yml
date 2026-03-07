@@ -94,8 +94,14 @@
       when: db_backup_exists.rc == 0
       become: yes
 
-    - name: Apply Django Database Migrations (For Fresh Spins)
-      command: docker compose run --rm backend python manage.py migrate
+    - name: Generate Django Database Migrations (The Architect)
+      command: docker compose exec -T backend python manage.py makemigrations --noinput
+      args:
+        chdir: /opt/SquadHost
+      become: yes
+
+    - name: Apply Django Database Migrations (The Builder)
+      command: docker compose exec -T backend python manage.py migrate
       args:
         chdir: /opt/SquadHost
       become: yes

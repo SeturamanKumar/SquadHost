@@ -79,6 +79,7 @@ def lambda_handler(event, context):
             InstanceType='t3.small',
             MinCount=1,
             MaxCount=1,
+            KeyName='sqaudhost-key',
             UserData=user_data_script,
             IamInstanceProfile={'Name': 'squadhost_worker_profile'},
             TagSpecifications=[{

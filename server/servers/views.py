@@ -7,12 +7,6 @@ from .serializers import MinecraftServerSerializer
 from .orchestrator import orchestrate_server_action
 import os
 
-def get_available_port():
-    last_server = MinecraftServer.objects.order_by('-port_number').first()
-    if last_server and last_server.port_number:
-        return last_server.port_number + 1
-    return 25565
-
 @api_view(['POST'])
 def create_and_start_server(request):
     serializer = MinecraftServerSerializer(data=request.data)
@@ -21,8 +15,7 @@ def create_and_start_server(request):
         raw_password = serializer.validated_data.get('server_password')
         hashed_password = make_password(raw_password)
 
-        server_instance = serializer.save(server_password=hashed_password)
-        assigned_port = get_available_port()
+        server_instance = serializer.save(server_password=hashed_password, is_running=True)
 
         success, message = orchestrate_server_action(server_instance.id, "START")
 
@@ -55,6 +48,9 @@ def restart_server(request):
     if not check_password(password, server_instance.server_password):
         return Response({"error": "Incorrect password"}, status=status.HTTP_400_BAD_REQUEST)
     
+    if server_instance.is_running:
+        return Response({"error": "Server is already running in AWS!"}, status=status.HTTP_400_BAD_REQUEST)
+
     success, message = orchestrate_server_action(server_instance.id, "START")
 
     if success:
@@ -86,12 +82,13 @@ def webhook_update_status(request):
     try:
         server = MinecraftServer.objects.get(server_name=server_name)
         
-        if request.data.get('status'):
-            server.status = request.data.get('status')
         if request.data.get('ip_address'):
             server.server_ip = request.data.get('ip_address')
+            server.is_running = True
+        if request.data.get('status') == 'OFFLINE':
+            server.is_running = False
 
-        server.name()
+        server.save()
         return Response({"message": "Status updated successfully via webhook!"}, status=status.HTTP_200_OK)
     except MinecraftServer.DoesNotExist:
         return Response({"error": "Server Not Found"}, status=status.HTTP_404_NOT_FOUND)
