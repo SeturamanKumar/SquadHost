@@ -2,7 +2,6 @@ import boto3
 import json
 import base64
 import os
-import urllib.request
 
 def lambda_handler(event, context):
     region = os.environ.get('AWS_REGION', 'ap-south-1')
@@ -13,8 +12,8 @@ def lambda_handler(event, context):
     s3_bucket = os.environ.get('S3_BACKUP_BUCKET')
     worker_ami_id = os.environ.get('WORKER_AMI_ID')
 
-    django_api_url = os.environ.get("DJANGO_WEBHOOK_URL")
-    webhook_secret = os.environ.get("WEBHOOK_SECRET")
+    sg_id = os.environ.get('SECURITY_GROUP_ID')
+    subnet_id = os.environ.get('SUBNET_ID')
 
     user_data_script = f"""#!/bin/bash
     apt-get update -y
@@ -84,6 +83,8 @@ def lambda_handler(event, context):
             MinCount=1,
             MaxCount=1,
             KeyName='squadhost-key',
+            SecurityGroupIds=[sg_id],
+            SubnetId=subnet_id,
             UserData=user_data_script,
             IamInstanceProfile={'Name': 'squadhost_worker_profile'},
             TagSpecifications=[{
@@ -99,17 +100,6 @@ def lambda_handler(event, context):
 
         instances = ec2.describe_instances(InstanceIds=[instance_id])
         public_ip = instances['Reservations'][0]['Instances'][0].get('PublicIpAddress')
-
-        if django_api_url and webhook_secret and public_ip:
-            payload = json.dumps({
-                'server_name': server_name,
-                'status': 'ONLINE',
-                'ip_address': public_ip,
-                'webhook_secret': webhook_secret,
-            }).encode('utf-8')
-
-            req = urllib.request.Request(django_api_url, data=payload, headers={'Content-Type': 'application/json'})
-            urllib.request.urlopen(req)
 
         return {
             'statusCode': 200,

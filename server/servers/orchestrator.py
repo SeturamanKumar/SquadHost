@@ -36,7 +36,15 @@ def orchestrate_server_action(server_id, action="START"):
             return False, res_payload.get('body', 'Unkown AWS Logic Error')
         
         if action == "START":
-            server.status = 'STARTING'
+            server.status = 'ONLINE'
+        
+            try:
+                inner_body = json.loads(res_payload.get('body', '{}'))
+                if inner_body.get('ip'):
+                    server.server_ip = inner_body.get('ip')
+            except json.JSONDecodeError:
+                pass
+
             server.save()
         
         return True, f"Server {server.server_name} is being provisioned in the cloud"
