@@ -4,8 +4,8 @@ import time
 import subprocess
 import logging
 
-MAX_INACTIVITY = 3600
-CHECK_INTERVAL = 300
+MAX_INACTIVITY = 300
+CHECK_INTERVAL = 60
 AWS_REGION = os.environ.get('AWS_REGION', 'ap-south-1')
 
 logging.basicConfig(level=logging.INFO)
