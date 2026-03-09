@@ -141,9 +141,11 @@ resource "aws_lambda_function" "status_updater_lambda" {
     runtime = "python3.12"
     source_code_hash = data.archive_file.status_updater_zip.output_base64sha256
 
+    timeout = 15
+
     environment {
         variables = {
-            DJANGO_WEBHOOK_URL = "http://${aws_instance.squadhost_server.public_ip}:8000/webhook/status"
+            DJANGO_WEBHOOK_URL = "http://${aws_instance.squadhost_server.public_ip}:8000/api/servers/webhook/status"
             WEBHOOK_SECRET = random_password.webhook_secret.result
         }
     }

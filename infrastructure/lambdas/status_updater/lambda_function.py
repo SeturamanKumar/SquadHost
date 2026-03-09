@@ -1,11 +1,12 @@
 import json
 import os
 import urllib.request
+import urllib.parse
 
 def lambda_handler(event, context):
     try:
         s3_record = event['Records'][0]['s3']
-        file_key = s3_record['object']['key']
+        file_key = urllib.parse.unquote_plus(s3_record['object']['key'])
 
         server_name = file_key.replace('.zip', '')
 
@@ -20,8 +21,8 @@ def lambda_handler(event, context):
     
     payload = json.dumps({
         'server_name': server_name,
-        'status': 'offline',
-        'secret': webhook_secret,
+        'status': 'OFFLINE',
+        'webhook_secret': webhook_secret,
     }).encode('utf-8')
 
     req = urllib.request.Request(
