@@ -59,6 +59,8 @@ resource "aws_lambda_function" "create_server_lambda" {
             WORKER_AMI_ID = data.aws_ami.ubuntu.id
             SECURITY_GROUP_ID = aws_security_group.ec2_sg.id
             SUBNET_ID = aws_subnet.public_1.id
+            DJANGO_WEBHOOK_URL = "http://${aws_instance.squadhost_server.public_ip}:8000/api/servers/webhook/status"
+            WEBHOOK_SECRET = random_password.webhook_secret.result
         }
     }
 }

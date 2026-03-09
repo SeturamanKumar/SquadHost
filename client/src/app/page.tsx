@@ -162,7 +162,7 @@ export default function Home() {
       const data = await response.json();
       
       if(response.ok){
-        alert(`Success! Server is running on port ${data.server?.port_number || data.port}`);
+        alert(`Success! Server is starting, it may take 5-6 minutes`);
         fetchServers();
       } else {
         alert(`Error: ${data.error}`);

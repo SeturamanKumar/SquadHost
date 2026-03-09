@@ -2,6 +2,7 @@ import boto3
 import json
 import base64
 import os
+import urllib.request
 
 def lambda_handler(event, context):
     region = os.environ.get('AWS_REGION', 'ap-south-1')
@@ -9,6 +10,25 @@ def lambda_handler(event, context):
 
     body = json.loads(event.get('body', '{}'))
     server_name = body.get('server_name', 'default-server')
+    action = body.get('action', 'START')
+
+    if action == 'STOP':
+        try:
+            instances = ec2.describe_instances(
+                Filters=[
+                    {'Name': 'tag:Name', 'Values': [f"squadhost-worker-{server_name}"]},
+                    {'Name': 'instance-state-name', 'Values': ['running', 'pending', 'stopping', 'stopped']},
+                ]
+            )
+            instance_ids = [i['InstanceId'] for r in instances.get('Reservations', []) for i in r.get('Instances', [])]
+
+            if instance_ids:
+                ec2.terminate_instances(InstanceIds=instance_ids)
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Worker Terminated'})}
+            return {'statusCode': 200, 'body': json.dumps({'message': 'No Worker Found'})}
+        except Exception as e:
+            return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
 
     mc_version = body.get('mc_version', 'LATEST')
     difficulty = body.get('difficulty', 'normal')
@@ -18,7 +38,6 @@ def lambda_handler(event, context):
 
     s3_bucket = os.environ.get('S3_BACKUP_BUCKET')
     worker_ami_id = os.environ.get('WORKER_AMI_ID')
-
     sg_id = os.environ.get('SECURITY_GROUP_ID')
     subnet_id = os.environ.get('SUBNET_ID')
 
@@ -119,6 +138,26 @@ nohup /minecraft/kamikaze.sh > /minecraft/kamikaze.log 2>&1 &
 
         instances = ec2.describe_instances(InstanceIds=[instance_id])
         public_ip = instances['Reservations'][0]['Instances'][0].get('PublicIpAddress')
+
+        django_api_url = os.environ.get('DJANGO_WEBHOOK_URL')
+        webhook_secret = os.environ.get('WEBHOOK_SERRET')
+
+        if django_api_url and webhook_secret:
+            payload = json.dumps({
+                'server_name': server_name,
+                'ip_address': public_ip,
+                'webhook_secret': webhook_secret,
+            }).enocode('utf-8')
+
+            req = urllib.request.Request(
+                django_api_url,
+                data=payload,
+                headers={'Content-Type': 'application/json'}
+            )
+            try:
+                urllib.request.urlopen(req, timeout=10)
+            except Exception as e:
+                print(f"webhook failed: {e}")
 
         return {
             'statusCode': 200,
