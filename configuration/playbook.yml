@@ -93,6 +93,10 @@
         PGPASSWORD={{ db_password }} pg_restore -h {{ rds_endpoint.split(':')[0] }} -U {{ db_user }} -d postgres /tmp/restore.sql
       when: db_backup_exists.rc == 0
       become: yes
+      register: restore_result
+      until: restore_result.rc == 0
+      retries: 6
+      delay: 20
 
     - name: Generate Django Database Migrations (The Architect)
       command: docker compose exec -T backend python manage.py makemigrations --noinput

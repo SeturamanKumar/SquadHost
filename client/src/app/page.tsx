@@ -48,7 +48,7 @@ export default function Home() {
     const fetchVersions = async () => {
 
       try {
-        const response = await fetch('https://api.papermc.io/v2/projects/paper');
+        const response = await fetch('/api/route/versions');
         const data = await response.json();
 
         const reversedVersions = data.versions.reverse();
@@ -66,6 +66,10 @@ export default function Home() {
 
     fetchVersions();
     fetchServers();
+
+    const interval = setInterval(() => {
+      fetchServers();
+    }, 5000);
   }, []);
 
   useEffect(() => {
