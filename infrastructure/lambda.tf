@@ -26,7 +26,7 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
         Statement = [
             {
                 Effect = "Allow"
-                Action = ["ec2:RunInstances", "ec2:CreateTags", "ec2:DescribeInstances"]
+                Action = ["ec2:RunInstances", "ec2:CreateTags", "ec2:DescribeInstances", "ec2:TerminateInstances"]
                 Resource = "*"
             },
             {

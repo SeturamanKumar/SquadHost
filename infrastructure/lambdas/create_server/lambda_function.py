@@ -140,14 +140,14 @@ nohup /minecraft/kamikaze.sh > /minecraft/kamikaze.log 2>&1 &
         public_ip = instances['Reservations'][0]['Instances'][0].get('PublicIpAddress')
 
         django_api_url = os.environ.get('DJANGO_WEBHOOK_URL')
-        webhook_secret = os.environ.get('WEBHOOK_SERRET')
+        webhook_secret = os.environ.get('WEBHOOK_SECRET')
 
         if django_api_url and webhook_secret:
             payload = json.dumps({
                 'server_name': server_name,
                 'ip_address': public_ip,
                 'webhook_secret': webhook_secret,
-            }).enocode('utf-8')
+            }).encode('utf-8')
 
             req = urllib.request.Request(
                 django_api_url,

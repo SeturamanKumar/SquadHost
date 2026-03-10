@@ -41,7 +41,8 @@ def orchestrate_server_action(server_id, action="START"):
             return False, res_payload.get('body', 'Unkown AWS Logic Error')
         
         if action == "START":
-            server.status = 'ONLINE'
+            server.refresh_from_db()
+            server.is_running = True
         
             try:
                 inner_body = json.loads(res_payload.get('body', '{}'))
