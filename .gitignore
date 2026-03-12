@@ -52,3 +52,5 @@ squadhost-key.pem
 
 create_server.zip
 status_updater.zip
+
+aws_credentials.env
