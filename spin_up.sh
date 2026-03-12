@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR/infrastructure" || { echo "Failed to Find infrastructure directo
 echo "Step 0: Bootstrapping Terraform State Bucket..."
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-MASTER_REGION=$(aws configure get region)
+MASTER_REGION=$AWS_DEFAULT_REGION
 STATE_BUCKET="squadhost-tfstate-${ACCOUNT_ID}"
 
 if aws s3 ls "s3://$STATE_BUCKET" 2>&1 | grep -q 'NoSuchBucket'; then
@@ -44,6 +44,8 @@ echo "Step 3: Configuring the server via Ansible..."
 
 export ANSIBLE_CONFIG="$SCRIPT_DIR/configuration/ansible.cfg"
 export ANSIBLE_HOST_KEY_CHECKING=False
+
+chmod 400 "$SCRIPT_DIR/infrastructure/squadhost-key.pem"
 
 ansible-playbook -i "$SERVER_IP," "$SCRIPT_DIR/configuration/playbook.yml" \
     --private-key "$SCRIPT_DIR/infrastructure/squadhost-key.pem" \

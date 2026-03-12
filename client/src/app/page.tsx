@@ -1,6 +1,6 @@
 
 'use client'
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 
 interface ServerInstance {
   id: string;
@@ -70,6 +70,7 @@ export default function Home() {
     const interval = setInterval(() => {
       fetchServers();
     }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function Home() {
     <main className="container">
 
       <header>
-        <h1>SqaudHost Dashboard</h1>
+        <h1>SquadHost Dashboard</h1>
         <p style={{ color: 'var(--text-muted)' }}>
           Manage your AWS-hosted Minecraft servers.
         </p>
@@ -218,7 +219,7 @@ export default function Home() {
             />
           </div>
 
-          <div style={{ display: 'gird', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem'}}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem'}}>
             <select 
               value={mcVersion}
               onChange={(e) => setMcVersion(e.target.value)}

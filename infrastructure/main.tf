@@ -4,6 +4,15 @@ terraform {
             source = "hashicorp/aws"
             version = "~> 5.0"
         }
+        random = {
+            source = "hashicorp/random"
+        }
+        tls = {
+            source = "hashicorp/tls"
+        }
+        local = {
+            source = "hashicorp/local"
+        }
     }
     backend "s3" {
         key = "squadhost/terraform.tfstate"

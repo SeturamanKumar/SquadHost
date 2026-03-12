@@ -9,7 +9,7 @@ echo "Step 1: Destroying EC2, RDS, VPC and Backup S3 Bucket..."
 terraform destroy -auto-approve
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=$(aws configure get region)
+AWS_REGION=$AWS_DEFAULT_REGION
 STATE_BUCKET_NAME="squadhost-tfstate-${AWS_ACCOUNT_ID}"
 
 echo "Step 2: Locating Terraform State Bucket (${STATE_BUCKET_NAME})..."

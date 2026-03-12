@@ -11,7 +11,7 @@ docker build -t squadhost-deployer -f Dockerfile.deploy .
 
 echo "Executing Dockerized Deployment..."
 docker run --rm -it \
-    --env_file aws_credentials.env \
+    --env-file aws_credentials.env \
     -v "$(pwd)":/workspace \
     squadhost-deployer \
     /bin/bash -c "chmod +x spin_up.sh && ./spin_up.sh"

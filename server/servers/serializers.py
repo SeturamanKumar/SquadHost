@@ -19,7 +19,6 @@ class MinecraftServerSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
-            'port_number',
             'is_running',
             'created_at',
         ]

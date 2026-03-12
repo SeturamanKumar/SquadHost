@@ -43,7 +43,7 @@ def restart_server(request):
         server_instance = MinecraftServer.objects.get(server_name=server_name)
 
     except MinecraftServer.DoesNotExist:
-        return Response({"error": "Server Not Found."}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({"error": "Server Not Found."}, status=status.HTTP_404_NOT_FOUND)
     
     if not check_password(password, server_instance.server_password):
         return Response({"error": "Incorrect password"}, status=status.HTTP_400_BAD_REQUEST)
