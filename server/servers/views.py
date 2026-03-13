@@ -6,9 +6,17 @@ from .models import MinecraftServer
 from .serializers import MinecraftServerSerializer
 from .orchestrator import orchestrate_server_action
 import os
+import re
 
 @api_view(['POST'])
 def create_and_start_server(request):
+    server_name = request.data.get('server_name', '')
+    if not re.match(r'^[a-zA-Z0-9_-]+$', server_name):
+        return Response(
+            {"error": "Server name can only contain letters, numbers, hyphens and underscroes"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     serializer = MinecraftServerSerializer(data=request.data)
 
     if serializer.is_valid():
@@ -87,6 +95,7 @@ def webhook_update_status(request):
             server.is_running = True
         if request.data.get('status') == 'OFFLINE':
             server.is_running = False
+            server.server_ip = None
 
         server.save()
         return Response({"message": "Status updated successfully via webhook!"}, status=status.HTTP_200_OK)

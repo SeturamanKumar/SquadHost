@@ -1,6 +1,5 @@
 import boto3
 import json
-import base64
 import os
 import urllib.request
 
@@ -46,7 +45,14 @@ def lambda_handler(event, context):
 
     user_data_script = f"""#!/bin/bash
 apt-get update -y
-apt-get install -y docker.io unzip zip curl
+apt-get install -y unzip zip curl ca-certificates
+
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable" > /etc/apt/sources.list.d/docker.list
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip -q awscliv2.zip
@@ -71,7 +77,6 @@ docker run -d \\
     -e ONLINE_MODE={online_mode} \\
     {seed_env}
     -p 25565:25565 \\
-    -p 25575:25575 \\
     -v /minecraft/data:/data \\
     --name {server_name} \\
     --restart unless-stopped \\
@@ -84,19 +89,26 @@ INACTIVE_MINUTES=0
 sleep 300
 
 while true; do
-    PLAYERS=$(docker exec {server_name} rcon-cli --password kamikaze list | grep -o 'There are 0')
+    if docker ps --filter "name=^/{server_name}$" --filter "status=running" --format '{{{{.Name}}}}' | grep -q "{server_name}"; then
+        RCON_OUTPUT=$(docker exec {server_name} rcon-cli --password kamikaze list 2>/dev/null)
+        RCON_EXIT=$?
 
-    if [ ! -z "$PLAYERS" ]; then
-        INACTIVE_MINUTES=$((INACTIVE_MINUTES + 1))
+        if [ $RCON_EXIT -ne 0 ]; then
+            echo "RCON check failed, skipping this interval"
+        elif echo "$RCON_OUTPUT" | grep -q "There are 0"; then
+            INACTIVE_MINUTES=$((INACTIVE_MINUTES + 1))
+        else
+            INACTIVE_MINUTES=0
+        fi
     else
-        INACTIVE_MINUTES=0
+        INACTIVE_MINUTES=$((INACTIVE_MINUTES+1))
     fi
 
     if [ $INACTIVE_MINUTES -ge 4 ]; then
         docker stop {server_name}
 
         cd /minecraft/data
-        zip -r ../world.zip *
+        zip -r ../world.zip * -x "*.zip"
         aws s3 cp ../world.zip s3://{s3_bucket}/{server_name}.zip
         TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
         INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/instance-id)
@@ -134,7 +146,7 @@ nohup /minecraft/kamikaze.sh > /minecraft/kamikaze.log 2>&1 &
         instance_id = response['Instances'][0]['InstanceId']
 
         waiter = ec2.get_waiter('instance_running')
-        waiter.wait(InstanceIds=[instance_id], WaiterConfig={'Delay': 2, 'MaxAttempts': 30})
+        waiter.wait(InstanceIds=[instance_id], WaiterConfig={'Delay': 10, 'MaxAttempts': 30})
 
         instances = ec2.describe_instances(InstanceIds=[instance_id])
         public_ip = instances['Reservations'][0]['Instances'][0].get('PublicIpAddress')

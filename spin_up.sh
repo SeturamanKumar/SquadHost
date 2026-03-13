@@ -11,7 +11,7 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 MASTER_REGION=$AWS_DEFAULT_REGION
 STATE_BUCKET="squadhost-tfstate-${ACCOUNT_ID}"
 
-if aws s3 ls "s3://$STATE_BUCKET" 2>&1 | grep -q 'NoSuchBucket'; then
+if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
     echo "Creating remote state bucket: $STATE_BUCKET"
     aws s3 mb "s3://$STATE_BUCKET" --region "$MASTER_REGION"
 else

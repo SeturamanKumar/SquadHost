@@ -8,7 +8,7 @@ def lambda_handler(event, context):
         s3_record = event['Records'][0]['s3']
         file_key = urllib.parse.unquote_plus(s3_record['object']['key'])
 
-        server_name = file_key.replace('.zip', '')
+        server_name = os.path.basename(file_key).rsplit('.zip', 1)[0]
 
     except KeyError:
         return {'statusCode': 400, 'body': 'Invalid S3 Event structure'}

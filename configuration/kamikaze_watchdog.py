@@ -56,16 +56,16 @@ def backup_database():
 def self_destruct():
     try:
         logger.info("INITIATING SOFT-TERMINATION BACKUP")
-        rds.delete_db_instance(
-            DBInstanceIdentifier='squadhost-db',
-            SkipFinalSnapshot=True
-        )
-
         masters = ec2.describe_instances(
             Filters=[
                 {'Name': 'tag:Name', 'Values': ['Squadhost-Kamikaze-Node']},
                 {'Name': 'instance-state-name', 'Values': ['running']}
             ]
+        )
+        
+        rds.delete_db_instance(
+            DBInstanceIdentifier='squadhost-db',
+            SkipFinalSnapshot=True
         )
 
         for res in masters['Reservations']:

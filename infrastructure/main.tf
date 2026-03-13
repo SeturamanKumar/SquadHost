@@ -109,7 +109,7 @@ resource "aws_security_group" "ec2_sg" {
 
     ingress {
         from_port = 25565
-        to_port = 25600
+        to_port = 25565
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
@@ -244,7 +244,7 @@ resource "local_file" "squadhost_private_key" {
 
 resource "aws_instance" "squadhost_server" {
     ami = data.aws_ami.ubuntu.id
-    instance_type = "t3.small"
+    instance_type = "t3.micro"
     subnet_id = aws_subnet.public_1.id
     vpc_security_group_ids = [aws_security_group.ec2_sg.id]
     iam_instance_profile = aws_iam_instance_profile.ec2_profile.name

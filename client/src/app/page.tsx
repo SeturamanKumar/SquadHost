@@ -83,6 +83,11 @@ export default function Home() {
 
   const handleCreateServer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if(!/^[a-zA-Z0-9_-]+$/.test(serverName)) {
+      setStatus('Error: Server name can only container letters, numbers, hyphens and underscores. No spaces');
+      return;
+    }
+
     setStatus('Booting server... Please wait...');
     setAssignedAddressed('');
     setCopied(false);
@@ -108,7 +113,7 @@ export default function Home() {
       const data = await response.json();
 
       if(response.ok) {
-        setStatus(`Success! Server is running on port`);
+        setStatus(`Success! Server is Starting`);
         setAssignedAddressed(`Pending AWS IP Assignment...`);
         fetchServers();
       } else {
@@ -178,11 +183,23 @@ export default function Home() {
   }
 
   const copyToClipboard = () => {
-    if(assignedAddress) {
+    if(assignedAddress && assignedAddress !== 'Pending AWS IP Assignment...') return;
+
+    if(navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(assignedAddress);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    } else {
+      const el = document.createElement('textarea');
+      el.value = assignedAddress;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return(
@@ -296,6 +313,7 @@ export default function Home() {
                     </code>
                     <button 
                       onClick={copyToClipboard}
+                      disabled={assignedAddress === 'Pending AWS IP Assignment...'}
                       style={{padding: '0.5rem 1rem', backgroundColor: '#444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                         {copied ? 'Copied!': 'Copy Address'}
                       </button>
@@ -327,7 +345,7 @@ export default function Home() {
                       </div>
                       <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: server.is_running ? '#4caf50' : '#f44336' }}></div>
-                        <code style={{ color: 'var(--primary)' }}>{server.server_ip ? `${server.server_ip}:25565` : 'Pending AWS IP...'}</code>
+                        <code style={{ color: 'var(--primary)' }}>{server.server_ip ? `${server.server_ip}` : 'Pending AWS IP...'}</code>
                       </div>
                     </div>
 

@@ -38,6 +38,11 @@ def orchestrate_server_action(server_id, action="START"):
             server.refresh_from_db()
             server.is_running = True
             server.save()
+        elif action == "STOP":
+            server.refresh_from_db()
+            server.is_running = False
+            server.server_ip = None
+            server.save()
         
         return True, f"Server {server.server_name} is being provisioned in the cloud"
     

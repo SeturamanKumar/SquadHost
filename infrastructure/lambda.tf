@@ -51,7 +51,7 @@ resource "aws_lambda_function" "create_server_lambda" {
     runtime = "python3.12"
     source_code_hash = data.archive_file.create_server_zip.output_base64sha256
 
-    timeout = 60
+    timeout = 300
 
     environment {
         variables = {

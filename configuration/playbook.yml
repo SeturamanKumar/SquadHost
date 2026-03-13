@@ -31,19 +31,25 @@
       become: yes
 
     - name: Add Docker GPG key
-      apt_key:
+      ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+      become: yes
 
     - name: Add Docker repository
-      apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable"
         state: present
+        filename: docker
+      become: yes
       
     - name: Install Docker Engine
       apt:
         name: docker-ce
         state: latest
+        update_cache: yes
+      become: yes
 
     - name: Ensure Docker is running
       systemd:
@@ -68,6 +74,7 @@
           ALLOWED_HOSTS={{ inventory_hostname }},localhost,127.0.0.1
           NEXT_PUBLIC_API_URL=http://{{ inventory_hostname }}:8000
           WEBHOOK_SECRET={{ webhook_secret }}
+          AWS_REGION={{ ansible_facts['env']['AWS_DEFAULT_REGION'] | default('ap-south-1') }}
 
     - name: Inject .env into frontend for NEXT.js build context
       copy:
@@ -98,12 +105,6 @@
       retries: 6
       delay: 20
 
-    - name: Generate Django Database Migrations (The Architect)
-      command: docker compose exec -T backend python manage.py makemigrations --noinput
-      args:
-        chdir: /opt/SquadHost
-      become: yes
-
     - name: Apply Django Database Migrations (The Builder)
       command: docker compose exec -T backend python manage.py migrate
       args:
@@ -121,5 +122,5 @@
       become: yes
 
     - name: Start the Macro-Kamikaze Watchdog
-      shell: "RDS_HOSTNAME={{ rds_endpoint }} RDS_USERNAME={{ db_user }} RDS_PASSWORD={{ db_password }} BACKUP_BUCKET_NAME={{ backup_bucket }} nohup python3 /opt/SquadHost/configuration/kamikaze_watchdog.py > /var/log/watchdog.log 2>&1 &"
+      shell: "AWS_REGION={{ ansible_facts['env']['AWS_DEFAULT_REGION'] | default('ap-south-1') }} RDS_HOSTNAME={{ rds_endpoint }} RDS_USERNAME={{ db_user }} RDS_PASSWORD={{ db_password }} BACKUP_BUCKET_NAME={{ backup_bucket }} nohup python3 /opt/SquadHost/configuration/kamikaze_watchdog.py > /var/log/watchdog.log 2>&1 &"
       become: yes

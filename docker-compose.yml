@@ -6,6 +6,8 @@ services:
     env_file:
       - .env
     restart: always
+    depends_on:
+      - backend
 
   backend:
     build: ./server
