@@ -26,7 +26,7 @@ def orchestrate_server_action(server_id, action="START"):
 
         response = lambda_client.invoke(
             FunctionName='squadhost_create_server',
-            InvocationType='RequestResponse',
+            InvocationType='Event',
             Payload=json.dumps(payload),
         )
 
@@ -36,9 +36,9 @@ def orchestrate_server_action(server_id, action="START"):
             logger.error(f"Lambda Error for {server.server_name}: {res_payload}")
             return False, res_payload.get('errorMessage', 'Unknown Lambda Error')
         
-        if res_payload.get('statusCode') != 200:
-            logger.error(f"Lambda Logical Error for {server.server_name}: {res_payload}")
-            return False, res_payload.get('body', 'Unkown AWS Logic Error')
+        if res_payload.get('statusCode') != 202:
+            logger.error(f"Lambda rejected the invocation {server.server_name}: {response}")
+            return False, "Lambda failed to accept the request"
         
         if action == "START":
             server.refresh_from_db()

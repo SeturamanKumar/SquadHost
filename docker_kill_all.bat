@@ -4,10 +4,14 @@ if not exist aws_credentials.env (
     exit /b 1 
 )
 
+echo Initialising Nuclear Teardown for SquadHost...
+echo [CRITICAL] Do NOT close this window or press Ctril+C! Orphaned AWS resources will cost you money!
 echo Executing Dockerized Deletion...
 
 docker run --rm -it ^
-    -env-file aws_credentials.env ^
+    --env-file aws_credentials.env ^
     -v "%cd%":/workspace ^
     squadhost-deployer ^
     /bin/bash -c "chmod +x kill_all.sh && ./kill_all.sh"
+
+echo Teardown complete. All AWS resources destroyed. Your bill is safe.

@@ -16,6 +16,19 @@ Beyond solving a hosting problem, this project served as a practical proving gro
 </details>
 
 <details>
+<summary><strong>✅ Prerequisites</strong></summary>
+
+Before you begin, make sure you have the following:
+
+* **Docker** installed and running on your machine (installation instructions are in Step 4 for your OS).
+* **An AWS Account** with a valid credit card for identity verification (see Step 2).
+* **~10-15 minutes** for the initial deployment to complete.
+
+You do **not** need to install Terraform, Ansible, or the AWS CLI natively — everything runs inside Docker.
+
+</details>
+
+<details>
 <summary><strong>🚀 Installation & Deployment Guide</strong></summary>
 
 SquadHost is fully containerized. You do **not** need to install Terraform, Ansible, or the AWS CLI natively on your machine. You only need Docker and an Amazon Web Services (AWS) Account.
@@ -26,13 +39,14 @@ First, we need to set up the configuration file where your AWS keys will eventua
 2. Locate the `aws_credentials.env.template` file in the root directory.
 3. Duplicate the file and rename the copy exactly to `aws_credentials.env`.
 4. Keep this file open. We will paste your Access Key, Secret Key, and Region into it in Step 3. *(Note: This file is securely git-ignored to protect your AWS account).*
+5. **Important:** Also change the default `TF_VAR_db_username` and `TF_VAR_db_password` values in this file to secure credentials of your choice before deploying.
 
 ### Step 2: Create an AWS Account
 > ⚠️ **Important Billing Warning:** AWS requires a valid credit card for identity verification. New accounts typically receive AWS Free Tier benefits, which act like a credit limit (often covering the first 750 hours of small EC2 instances per month for the first year). 
 > 
 > **However, AWS is not entirely free.** Once your Free Tier limits are exhausted, or your trial period ends, AWS will charge your linked card. While SquadHost's kamikaze architecture is aggressively cost-optimized, you are still financially responsible for any cloud resources you consume.
 >
-> **The expected cost** per month can reach upto 0.06$ per hour of gameplay which will be covered by the 100$ provided to you by AWS.
+> **The expected cost** per month can reach up to $0.06 per hour of gameplay, which will be covered by the $100 credit provided to you by AWS.
 
 * If you do not already have an AWS account, please follow the [Official AWS Account Creation Guide](https://repost.aws/knowledge-center/create-and-activate-aws-account).
 * **Crucial Step:** Ensure you select the **Basic support - Free** plan during the final signup step.
@@ -53,18 +67,22 @@ Select your operating system below to install Docker and ignite the cloud infras
 <details>
 <summary>🐧 <strong>Linux Deployment</strong></summary>
 
-1. **Install Docker:** Install the Docker Engine using your distribution's package manager (e.g., `sudo pacman -S docker` or `sudo apt install docker.io`).
+1. **Install Docker (Universal Method):** Run the official convenience script to automatically install Docker Engine for your specific Linux distribution:
 2. **Docker Permissions:** On Linux, grant permission to the Docker socket to run containers:
 3. **Script Permissions:** Ensure the deployment scripts are executable:
 4. **Ignite the Cloud:** Run the spin_up script:
 
 ```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
 sudo chmod 666 /var/run/docker.sock
-chmod +x docker_spin_up.sgh docker_kill_all.sh
+chmod +x docker_spin_up.sh docker_kill_all.sh
 ./docker_spin_up.sh
 ```
 
-5. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing. *(Note: This command will also delete any saved multiplayer worls you might have had).*
+5. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
+
+> ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
 
 ```bash
 ./docker_kill_all.sh
@@ -74,13 +92,16 @@ chmod +x docker_spin_up.sgh docker_kill_all.sh
 <details>
 <summary>🪟 <strong>Windows Deployment</strong></summary>
 
-1. **Install Docker:** Download and install Docker Desktop for Windows. You will need to Restart your computer after you installed Docker.
+1. **Install Docker:** Download and install Docker Desktop for Windows (https://docs.docker.com/desktop/setup/install/windows-install/). You will need to restart your computer after installation.
 2. **Ignite the Cloud:** Double-click the following script and run it as administrator:
 
 ```
 docker_spin_up.bat
 ```
-3. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing. *(Note: This command will also delete any saved multiplayer worls you might have had).*
+3. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
+
+> ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
+
 ```
 docker_kill_all.bat
 ```
@@ -89,17 +110,23 @@ docker_kill_all.bat
 <details>
 <summary>🍏 <strong>Mac Deployment</strong></summary>
 
-1. **Install Docker:** Download and install Docker Desktop for Mac. Ensure Docker is running in your menu bar.
+1. **Install Docker:** Download and install Docker Desktop for Mac (https://docs.docker.com/desktop/setup/install/mac-install/). Ensure Docker is running in your menu bar.
 2. **Script Permissions:** Ensure the deployment scripts are executable:
 3. **Ignite the Cloud:** Run the spin_up script:
 
-```
+```bash
 sudo chmod 666 /var/run/docker.sock
-chmod +x docker_spin_up.sgh docker_kill_all.sh
+chmod +x docker_spin_up.sh docker_kill_all.sh
 ./docker_spin_up.sh
 ```
-4. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing. *(Note: This command will also delete any saved multiplayer worls you might have had).*
 
+4. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
+
+> ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
+
+```bash
+./docker_kill_all.sh
+```
 </details>
 </details>
 
@@ -112,10 +139,10 @@ To achieve a true "scale-to-zero" environment, this project utilizes a custom cl
 
 ### 1. The Kamikaze Approach (Cost Optimization)
 The core feature of SquadHost is the "Kamikaze" auto-deletion protocol. Cloud providers bill by the second for running EC2 instances. To minimize this, the architecture is designed to self-destruct when no longer needed.
-* **The Watchdog:** When a server is provisioned, Ansible injects a Bash watchdog script (`kamikaze.sh`) into the worker node.
+* **The Watchdog:** When a server is provisioned, a Python watchdog script (`kamikaze_watchdog.py`) is injected into the worker node via Ansible. This checks for number of Minecraft servers running and if there are exactly 0 servers for 20 minutes. This script starts the Self-Termination.
 * **Inactivity Monitoring:** This script continuously polls the Dockerized Minecraft container via RCON to check the active player count.
-* **The 1-Hour Guillotine:** If the player count remains at exactly 0 for 1 continuous hour, the script triggers the shutdown sequence.
-* **Self-Termination:** The script safely stops the container, zips the world files, pushes the backup to AWS S3, and finally uses the AWS Metadata API to invoke the `ec2:TerminateInstances` permission, physically deleting its own host server from your AWS account to immediately halt billing.
+* **The Server Termination:** If the player count remains at exactly 0 for 4 minutes, the script triggers the shutdown sequence and follows the file save procedure.
+* **Self-Termination:** The script safely stops the container, zips the world files, pushes the backup to AWS S3, and finally uses the AWS SDK to invoke the `ec2:TerminateInstances` permission, physically deleting its own host server from your AWS account to immediately halt billing.
 
 ### 2. S3 State Hydration
 Because the worker nodes are constantly being deleted, the architecture is completely stateless. 
@@ -128,5 +155,26 @@ Because the worker nodes are constantly being deleted, the architecture is compl
 The entire foundational cloud network (VPCs, Subnets, Internet Gateways, IAM Roles, RDS Databases, and S3 Buckets) is managed exclusively through Terraform.
 * **Remote State Management:** The `spin_up.sh` script dynamically creates a secure S3 bucket to store the `terraform.tfstate` file, ensuring the infrastructure deployment process is safe, tracked, and completely reproducible on any machine.
 * **Dynamic Configuration:** Once Terraform successfully provisions the network, Boto3 passes the new database credentials and IPs to Ansible, which automatically SSHs into the Master EC2 node to configure the Django and Next.js Docker containers.
+
+</details>
+
+<details>
+<summary><strong>🛟 Troubleshooting</strong></summary>
+
+**Deployment fails immediately with an auth error**
+- Double-check your `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in `aws_credentials.env`. Make sure there are no trailing spaces.
+- Ensure the IAM user has programmatic access enabled and sufficient permissions (EC2, RDS, S3, Lambda, IAM).
+
+**Wrong region / resources created in unexpected location**
+- Verify `AWS_DEFAULT_REGION` in `aws_credentials.env` matches the region shown in the top-right corner of your AWS console.
+
+**Terraform state corruption after an interrupted deployment**
+- Never press `Ctrl+C` during deployment. If it happens, manually delete any partially created resources in the AWS console, then delete the `squadhost-tfstate-<account-id>` S3 bucket before re-running.
+
+**Server shows "Pending AWS IP..." for too long**
+- EC2 instance provisioning and the Minecraft server startup can take 5–6 minutes. Wait it out before retrying.
+
+**Docker not found or permission denied**
+- On Linux, ensure you ran `sudo chmod 666 /var/run/docker.sock` and that the Docker daemon is running (`sudo systemctl start docker`).
 
 </details>
