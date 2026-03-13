@@ -92,7 +92,7 @@ while true; do
         INACTIVE_MINUTES=0
     fi
 
-    if [ $INACTIVE_MINUTES -ge 2 ]; then
+    if [ $INACTIVE_MINUTES -ge 4 ]; then
         docker stop {server_name}
 
         cd /minecraft/data

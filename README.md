@@ -32,7 +32,7 @@ First, we need to set up the configuration file where your AWS keys will eventua
 > 
 > **However, AWS is not entirely free.** Once your Free Tier limits are exhausted, or your trial period ends, AWS will charge your linked card. While SquadHost's kamikaze architecture is aggressively cost-optimized, you are still financially responsible for any cloud resources you consume.
 >
-> **The expected cost** per month can reach upto 20$ which will be covered by the 100$ provided to you by AWS.
+> **The expected cost** per month can reach upto 0.06$ per hour of gameplay which will be covered by the 100$ provided to you by AWS.
 
 * If you do not already have an AWS account, please follow the [Official AWS Account Creation Guide](https://repost.aws/knowledge-center/create-and-activate-aws-account).
 * **Crucial Step:** Ensure you select the **Basic support - Free** plan during the final signup step.
