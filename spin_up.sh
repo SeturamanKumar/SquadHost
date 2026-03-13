@@ -53,3 +53,9 @@ ansible-playbook -i "$SERVER_IP," "$SCRIPT_DIR/configuration/playbook.yml" \
     --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC account_id=$ACCOUNT_ID backup_bucket=$BACKUP_BUCKET"
 
 echo "Squadhost is officially live! Access the dashboard at http://$SERVER_IP:3000"
+
+echo "Extracting Master IP from Terraform outputs..."
+
+echo $SERVER_IP > /workspace/master_ip.txt
+
+echo "Master IP saved to master_ip.txt successfully."

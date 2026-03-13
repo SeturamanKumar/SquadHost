@@ -29,28 +29,14 @@ def orchestrate_server_action(server_id, action="START"):
             InvocationType='Event',
             Payload=json.dumps(payload),
         )
-
-        res_payload = json.loads(response['Payload'].read().decode('utf-8'))
-
-        if response.get('FunctionError'):
-            logger.error(f"Lambda Error for {server.server_name}: {res_payload}")
-            return False, res_payload.get('errorMessage', 'Unknown Lambda Error')
         
-        if res_payload.get('statusCode') != 202:
+        if response.get('StatusCode') != 202:
             logger.error(f"Lambda rejected the invocation {server.server_name}: {response}")
             return False, "Lambda failed to accept the request"
         
         if action == "START":
             server.refresh_from_db()
             server.is_running = True
-        
-            try:
-                inner_body = json.loads(res_payload.get('body', '{}'))
-                if inner_body.get('ip'):
-                    server.server_ip = inner_body.get('ip')
-            except json.JSONDecodeError:
-                pass
-
             server.save()
         
         return True, f"Server {server.server_name} is being provisioned in the cloud"
