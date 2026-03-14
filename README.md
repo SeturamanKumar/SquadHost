@@ -68,19 +68,25 @@ Select your operating system below to install Docker and ignite the cloud infras
 <summary>🐧 <strong>Linux Deployment</strong></summary>
 
 1. **Install Docker (Universal Method):** Run the official convenience script to automatically install Docker Engine for your specific Linux distribution:
-2. **Docker Permissions:** On Linux, grant permission to the Docker socket to run containers:
-3. **Script Permissions:** Ensure the deployment scripts are executable:
-4. **Ignite the Cloud:** Run the spin_up script:
-
+2. **Add your user to the Docker group:** This allows you to run Docker without sudo on every command:
+3. **Apply the group change:** This activates the new group without requiring a full logout:
+4. **Script Permissions:** Ensure the deployment scripts are executable:
+5. **Ignite the Cloud:** Run the spin_up script:
 ```bash
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
-sudo chmod 666 /var/run/docker.sock
+sudo usermod -aG docker $USER
+newgrp docker
 chmod +x docker_spin_up.sh docker_kill_all.sh
 ./docker_spin_up.sh
 ```
 
-5. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
+6. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
+
+> ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
+```bash
+./docker_kill_all.sh
+```
 
 > ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
 
@@ -92,22 +98,40 @@ chmod +x docker_spin_up.sh docker_kill_all.sh
 <details>
 <summary>🪟 <strong>Windows Deployment</strong></summary>
 
-1. **Install Docker:** Download and install Docker Desktop for Windows (https://docs.docker.com/desktop/setup/install/windows-install/). You will need to restart your computer after installation.
-2. **Ignite the Cloud:** Double-click the following script and run it as administrator:
+1. **Enable WSL 2:** Docker Desktop requires WSL 2 to run on Windows. Search powershell in windows search and run as administrator then run this command:
+```powershell
+wsl --install
+```
 
+> ⚠️ **Note:** If WSL was not already installed, you will need to **restart your computer** before continuing.
+
+2. **Install Docker:** Search for **Docker Desktop** in the Microsoft Store and install it. Once installed, open it from the Start Menu and wait for it to fully start — look for the Docker whale icon 🐳 in the system tray to stop animating.
+
+> **Note:** You might need to make a docker account. You can use your gmail for this.
+
+3. **Verify Docker is running:** Open PowerShell and run:
+```powershell
+docker ps
+```
+
+If it returns a list (even empty), Docker is ready. If it returns an error, wait another 30 seconds and try again.
+
+4. **Ignite the Cloud:** Right-click `docker_spin_up.bat` and select **Run as administrator**:
 ```
 docker_spin_up.bat
 ```
-3. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
+
+> ⚠️ **Note:** The window must stay open for the entire 10-15 minute deployment. Do NOT close it or press Ctrl+C.
+
+5. **Nuclear Teardown:** When you are done with Minecraft you can run this to delete everything in AWS to stop any billing.
 
 > ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
-
 ```
 docker_kill_all.bat
 ```
 </details>
 
-<details>
+<!-- <details>
 <summary>🍏 <strong>Mac Deployment</strong></summary>
 
 1. **Install Docker:** Download and install Docker Desktop for Mac (https://docs.docker.com/desktop/setup/install/mac-install/). Ensure Docker is running in your menu bar.
@@ -127,7 +151,7 @@ chmod +x docker_spin_up.sh docker_kill_all.sh
 ```bash
 ./docker_kill_all.sh
 ```
-</details>
+</details> -->
 </details>
 
 <details>
