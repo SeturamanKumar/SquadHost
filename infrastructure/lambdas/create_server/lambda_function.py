@@ -43,6 +43,9 @@ def lambda_handler(event, context):
     online_mode = "FALSE" if allow_tlauncher else "TRUE"
     seed_env = f"-e SEED={seed} \\" if seed else "\\"
 
+    django_api_url = os.environ.get('DJANGO_WEBHOOK_URL', '')
+    webhook_secret = os.environ.get('WEBHOOK_SECRET', '')
+
     user_data_script = f"""#!/bin/bash
 apt-get update -y
 apt-get install -y unzip zip curl ca-certificates
@@ -58,6 +61,10 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 unzip -q awscliv2.zip
 ./aws/install
 
+curl -s -X POST {django_api_url} \
+    -H "Content-Type: application/json" \
+    -d '{{"server_name": "{server_name}", "status": "INSTALLING", "webhook_secret": "{webhook_secret}"}}'
+
 mkdir -p /minecraft/data
 cd /minecraft
 
@@ -66,6 +73,10 @@ aws s3 cp s3://{s3_bucket}/{server_name}.zip world.zip || echo "No existing worl
 if [ -f "world.zip" ]; then
     unzip world.zip -d /minecraft/data/
 fi
+
+curl -s -X POST {django_api_url} \
+    -H "Content-Type: application/json" \
+    -d '{{"server_name": "{server_name}", "status": "STARTING", "webhook_secret": "{webhook_secret}"}}'
 
 docker run -d \\
     -e EULA=TRUE \\
@@ -81,6 +92,10 @@ docker run -d \\
     --name {server_name} \\
     --restart unless-stopped \\
     itzg/minecraft-server
+
+curl -s -X POST {django_api_url} \
+    -H "Content-Type: application/json" \
+    -d '{{"server_name": "{server_name}", "status": "BOOTING", "webhook_secret": "{webhook_secret}"}}'
 
 cat << 'EOF' > /minecraft/kamikaze.sh
 #!/bin/bash
@@ -151,8 +166,6 @@ nohup /minecraft/kamikaze.sh > /minecraft/kamikaze.log 2>&1 &
         instances = ec2.describe_instances(InstanceIds=[instance_id])
         public_ip = instances['Reservations'][0]['Instances'][0].get('PublicIpAddress')
 
-        django_api_url = os.environ.get('DJANGO_WEBHOOK_URL')
-        webhook_secret = os.environ.get('WEBHOOK_SECRET')
 
         if django_api_url and webhook_secret:
             payload = json.dumps({

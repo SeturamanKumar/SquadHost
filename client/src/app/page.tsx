@@ -183,7 +183,7 @@ export default function Home() {
   }
 
   const copyToClipboard = () => {
-    if(assignedAddress && assignedAddress !== 'Pending AWS IP Assignment...') return;
+    if(assignedAddress && assignedAddress === 'Pending AWS IP Assignment...') return;
 
     if(navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(assignedAddress);

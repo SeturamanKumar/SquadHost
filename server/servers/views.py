@@ -89,13 +89,19 @@ def webhook_update_status(request):
 
     try:
         server = MinecraftServer.objects.get(server_name=server_name)
+
+        new_status = request.data.get('status')
         
         if request.data.get('ip_address'):
             server.server_ip = request.data.get('ip_address')
             server.is_running = True
-        if request.data.get('status') == 'OFFLINE':
+            server.status = 'ONLINE'
+        elif new_status == 'OFFLINE':
             server.is_running = False
             server.server_ip = None
+            server.status = 'OFFLINE'
+        elif new_status in ['INSTALLING', 'STARTING', 'BOOTING']:
+            server.status = new_status
 
         server.save()
         return Response({"message": "Status updated successfully via webhook!"}, status=status.HTTP_200_OK)

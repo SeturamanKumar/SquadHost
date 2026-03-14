@@ -15,6 +15,7 @@ class MinecraftServerSerializer(serializers.ModelSerializer):
             'seed',
             'server_ip',
             'is_running',
+            'status',
             'created_at',
         ]
         read_only_fields = [

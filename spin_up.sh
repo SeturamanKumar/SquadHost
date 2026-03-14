@@ -14,7 +14,7 @@ STATE_BUCKET="squadhost-tfstate-${ACCOUNT_ID}"
 if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
     echo "Creating remote state bucket: $STATE_BUCKET"
     aws s3 mb "s3://$STATE_BUCKET" --region "$MASTER_REGION"
-    echo 10
+    sleep 10
 else
     echo "Remote state bucket $STATE_BUCKET already exists"
 fi
