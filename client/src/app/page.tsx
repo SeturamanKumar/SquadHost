@@ -1,6 +1,6 @@
 
 'use client'
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface ServerInstance {
   id: string;
@@ -10,6 +10,71 @@ interface ServerInstance {
   max_players: number;
   is_running: Boolean;
   server_ip?: string;
+  status: string;
+  created_at: string;
+}
+
+const STAGES = [
+  { key: 'PROVISIONING', label: 'Provisioning EC2',        detail: 'Launching your cloud instance' },
+  { key: 'INSTALLING',   label: 'Installing Dependencies', detail: 'Setting up Docker & AWS CLI' },
+  { key: 'STARTING',     label: 'Starting Container',      detail: 'Downloading world & launching Minecraft' },
+  { key: 'BOOTING',      label: 'Booting Minecraft',       detail: 'Server is loading chunks & world data' },
+  { key: 'ONLINE',       label: 'Online',                  detail: 'Server is ready to play!' },
+];
+
+function ServerProgress({ status, elapsedSeconds }: { status: string, elapsedSeconds: number}) {
+
+  const currentIndex = STAGES.findIndex(s => s.key === status);
+  const progress = Math.min((((currentIndex) + 1) / STAGES.length) * 100, 100);
+  const mins = Math.floor(elapsedSeconds / 60);
+  const secs = elapsedSeconds % 60;
+
+  return(
+    <div style={{ marginTop: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+          {STAGES[currentIndex]?.label ?? 'Pending'}
+        </span>
+        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          {mins}:{secs.toString().padStart(2, '0')} elapsed
+        </span>
+      </div>
+
+      <div style={{ height: '6px', backgroundColor: '#444', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%',
+          width: `${progress}%`,
+          backgroundColor: 'var(--primary)',
+          borderRadius: '3px',
+          transition: 'width 0.5s ease'
+        }} />
+      </div>
+
+      <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+        {STAGES.map((stage, i) => {
+          const done = i < currentIndex;
+          const active = 1 === currentIndex;
+          return (
+            <span 
+              key={stage.key}
+              title={stage.detail}
+              style={{
+                fontSize: '0.75rem',
+                padding: '0.2rem 0.5rem',
+                borderRadius: '12px',
+                backgroundColor: done ? '#1a3a1a' : active ? '#2a3a1a' : '#333',
+                color: done ? 'var(--primary)' : active ? '#aed581' : 'var(--text-muted)',
+                border: `1px solid ${done ? 'var(--primary)' : active ? '#aed581' : '#555'}`,
+                cursor: 'default',
+              }}>
+                {done ? '✓ ' : active ? '⟳ ' : ''}{stage.label}
+              </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+
 }
 
 export default function Home() {
@@ -27,6 +92,41 @@ export default function Home() {
   const [copied, setCopied] = useState<boolean>(false);
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
   const [servers, setServers] = useState<ServerInstance[]>([]);
+
+  const notifiedServers = useRef<Set<string>>(new Set());
+
+  const playNotifications = () => {
+    
+    const ctx = new AudioContext();
+
+    const playNote = (frequency: number, startTime: number, duration: number) => {
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      oscillator.connect(gainNode);
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+    };
+
+    const now = ctx.currentTime;
+    playNote(523, now, 0.15);
+    playNote(659, now + 0.15, 0.15);
+    playNote(784, now + 0.30, 0.3);
+
+  }
+
+  useEffect(() => {
+    servers.forEach(server => {
+      if(server.status === 'ONLINE' && !notifiedServers.current.has(server.id)) {
+        notifiedServers.current.add(server.id);
+        playNotifications();
+      }
+    })
+  }, [servers])
 
   const fetchServers = async () => {
 
@@ -172,6 +272,10 @@ export default function Home() {
       const data = await response.json();
       
       if(response.ok){
+        const restartedServer = servers.find(s => s.server_name === targetServiceName)
+        if(restartedServer) {
+          notifiedServers.current.delete(restartedServer.id);
+        }
         alert(`Success! Server is starting, it may take 5-6 minutes`);
         fetchServers();
       } else {
@@ -348,6 +452,13 @@ export default function Home() {
                         <code style={{ color: 'var(--primary)' }}>{server.server_ip ? `${server.server_ip}` : 'Pending AWS IP...'}</code>
                       </div>
                     </div>
+
+                    {server.status !== 'ONLINE' && server.status !== 'OFFLINE' && (
+                      <ServerProgress
+                        status={server.status}
+                        elapsedSeconds={Math.floor((Date.now() - new Date(server.created_at).getTime()))}
+                      />
+                    )}
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button 

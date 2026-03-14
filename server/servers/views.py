@@ -58,6 +58,10 @@ def restart_server(request):
     
     if server_instance.is_running:
         return Response({"error": "Server is already running in AWS!"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    server_name.status = 'PROVISIONING'
+    server_instance.servre_ip = None
+    server_instance.save()
 
     success, message = orchestrate_server_action(server_instance.id, "START")
 

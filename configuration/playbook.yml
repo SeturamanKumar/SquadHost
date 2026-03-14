@@ -57,12 +57,27 @@
         state: started
         enabled: yes
 
+    - name: Check if SquadHost repository already exists
+      stat:
+        path: /opt/SquadHost/.git
+      register: repo_exists
+    
     - name: Clone the SquadHost repository
       git:
         repo: 'https://github.com/SeturamanKumar/SquadHost.git'
         dest: /opt/SquadHost
         version: main
         force: yes
+      when: not repo_exists.stat.exists
+
+    - name: Pull Latest changes if repository already exists
+      git:
+        repo: 'https://github.com/SeturamanKumar/SquadHost.git'
+        dest: /opt/SquadHost
+        version: main
+        update: yes
+        force: yes
+      when: repo_exists.stat.exists
 
     - name: Create backend .env file for Django & RDS
       copy:
