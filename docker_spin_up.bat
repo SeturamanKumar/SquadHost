@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 if not exist aws_credentials.env (
     echo ERROR: aws_credentials.env file not found!
     echo Please copy aws_credentials.env.template, rename it to aws_credentials.env, and add your keys.
@@ -17,7 +18,7 @@ docker run --rm -it ^
     --env-file aws_credentials.env ^
     -v "%cd%":/workspace ^
     squadhost-deployer ^
-    /bin/bash -c "chmod +x spin_up.sh && ./spin_up.sh"
+    /bin/bash -c "dos2unix /workspace/spin_up.sh; chmod +x /workspace/spin_up.sh; cd /workspace; ./spin_up.sh"
 
 set /p MASTER_IP=<master_ip.txt
 
