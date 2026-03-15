@@ -13,7 +13,7 @@ def create_and_start_server(request):
     server_name = request.data.get('server_name', '')
     if not re.match(r'^[a-zA-Z0-9_-]+$', server_name):
         return Response(
-            {"error": "Server name can only contain letters, numbers, hyphens and underscroes"},
+            {"error": "Server name can only contain letters, numbers, hyphens and underscores"},
             status=status.HTTP_400_BAD_REQUEST
         )
 

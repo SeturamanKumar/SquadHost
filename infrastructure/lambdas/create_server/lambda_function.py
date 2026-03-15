@@ -140,6 +140,8 @@ EOF
 chmod +x /minecraft/kamikaze.sh
 nohup /minecraft/kamikaze.sh > /minecraft/kamikaze.log 2>&1 &
 
+sleep 30
+
 curl -s -X POST {django_api_url} \
     -H "Content-Type: application/json" \
     -d '{{"server_name": "{server_name}", "status": "ONLINE", "webhook_secret": "{webhook_secret}"}}'
