@@ -53,7 +53,7 @@ function ServerProgress({ status, elapsedSeconds }: { status: string, elapsedSec
       <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         {STAGES.map((stage, i) => {
           const done = i < currentIndex;
-          const active = 1 === currentIndex;
+          const active = i === currentIndex;
           return (
             <span 
               key={stage.key}
@@ -102,7 +102,7 @@ export default function Home() {
     const playNote = (frequency: number, startTime: number, duration: number) => {
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
-      oscillator.connect(gainNode);
+      oscillator.connect(ctx.destination);
       oscillator.frequency.value = frequency;
       oscillator.type = 'sine';
       gainNode.gain.setValueAtTime(0, startTime);
@@ -439,41 +439,42 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
               {
                 servers.map((server) => (
-                  <div key={server.id} style={{ padding: '1.5rem', backgroundColor: '#2a2a2a', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #444' }}>
-                    <div>
-                      <h3 style={{ margin: '0 0 0.5rem 0', color: 'white' }}>{server.server_name}</h3>
-                      <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        <span>Version: {server.mc_version}</span>
-                        <span>Players: {server.max_players}</span>
-                        <span>Difficulty: {server.difficulty}</span>
+                  <div key={server.id} style={{ padding: '1.5rem', backgroundColor: '#2a2a2a', borderRadius: '8px', border: '1px solid #444' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ margin: '0 0 0.5rem 0', color: 'white' }}>{server.server_name}</h3>
+                        <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          <span>Version: {server.mc_version}</span>
+                          <span>Players: {server.max_players}</span>
+                          <span>Difficulty: {server.difficulty}</span>
+                        </div>
+                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: server.is_running ? '#4caf50' : '#f44336' }}></div>
+                          <code style={{ color: 'var(--primary)' }}>{server.server_ip ? `${server.server_ip}` : 'Pending AWS IP...'}</code>
+                        </div>
                       </div>
-                      <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: server.is_running ? '#4caf50' : '#f44336' }}></div>
-                        <code style={{ color: 'var(--primary)' }}>{server.server_ip ? `${server.server_ip}` : 'Pending AWS IP...'}</code>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                          onClick={() => handleRestart(server.server_name)}
+                          style={{ padding: '0.5rem 1rem', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                          >
+                          Restart
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(server.server_name)}
+                          style={{ padding: '0.5rem 1rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                          >
+                          Delete
+                        </button>
                       </div>
                     </div>
-
                     {server.status !== 'ONLINE' && server.status !== 'OFFLINE' && (
                       <ServerProgress
                         status={server.status}
-                        elapsedSeconds={Math.floor((Date.now() - new Date(server.created_at).getTime()))}
+                        elapsedSeconds={Math.floor((Date.now() - new Date(server.created_at).getTime()) / 1000)}
                       />
                     )}
-
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        onClick={() => handleRestart(server.server_name)}
-                        style={{ padding: '0.5rem 1rem', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                      >
-                        Restart
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(server.server_name)}
-                        style={{ padding: '0.5rem 1rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                      >
-                        Delete
-                      </button>
-                    </div>
                   </div>
                 ))
               }

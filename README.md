@@ -88,11 +88,6 @@ chmod +x docker_spin_up.sh docker_kill_all.sh
 ./docker_kill_all.sh
 ```
 
-> ⚠️ **Warning:** This will permanently delete any saved multiplayer worlds that have not been manually backed up from S3.
-
-```bash
-./docker_kill_all.sh
-```
 </details>
 
 <details>

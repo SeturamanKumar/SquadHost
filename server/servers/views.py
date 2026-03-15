@@ -59,7 +59,7 @@ def restart_server(request):
     if server_instance.is_running:
         return Response({"error": "Server is already running in AWS!"}, status=status.HTTP_400_BAD_REQUEST)
     
-    server_name.status = 'PROVISIONING'
+    server_instance.status = 'PROVISIONING'
     server_instance.servre_ip = None
     server_instance.save()
 
@@ -99,12 +99,11 @@ def webhook_update_status(request):
         if request.data.get('ip_address'):
             server.server_ip = request.data.get('ip_address')
             server.is_running = True
-            server.status = 'ONLINE'
         elif new_status == 'OFFLINE':
             server.is_running = False
             server.server_ip = None
             server.status = 'OFFLINE'
-        elif new_status in ['INSTALLING', 'STARTING', 'BOOTING']:
+        elif new_status in ['INSTALLING', 'STARTING', 'BOOTING', 'ONLINE']:
             server.status = new_status
 
         server.save()
