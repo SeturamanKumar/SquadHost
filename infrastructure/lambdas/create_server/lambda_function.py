@@ -34,6 +34,16 @@ def lambda_handler(event, context):
     max_players = body.get('max_players', 10)
     allow_tlauncher = body.get('allow_tlauncher', False)
     seed = body.get('seed', '')
+    ram = body.get('ram', 4)
+
+    instance_type_map = {
+        2: 't3.small',
+        4: 't3.medium',
+        8: 't3.large',
+        16: 't3.xlarge',
+    }
+    instance_type = instance_type_map.get(ram, 't3.medium')
+    memory_allocation = f"{ram*1024 - 512}M"
 
     s3_bucket = os.environ.get('S3_BACKUP_BUCKET')
     worker_ami_id = os.environ.get('WORKER_AMI_ID')
@@ -82,6 +92,7 @@ docker run -d \\
     -e EULA=TRUE \\
     -e RCON_PASSWORD=kamikaze \\
     -e ENABLE_RCON=true \\
+    -e MEMORY={memory_allocation} \\
     -e VERSION={mc_version} \\
     -e DIFFICULTY={difficulty} \\
     -e MAX_PLAYERS={max_players} \\
@@ -150,14 +161,14 @@ curl -s -X POST {django_api_url} \
     try:
         response = ec2.run_instances(
             ImageId=worker_ami_id,
-            InstanceType='t3.small',
+            InstanceType=instance_type,
             MinCount=1,
             MaxCount=1,
             KeyName='squadhost-key',
             SecurityGroupIds=[sg_id],
             SubnetId=subnet_id,
-            UserData=user_data_script,
             IamInstanceProfile={'Name': 'squadhost_worker_profile'},
+            UserData=user_data_script,
             TagSpecifications=[{
                 'ResourceType': 'instance',
                 'Tags': [{'Key': 'Name', 'Value': f"squadhost-worker-{server_name}"}]

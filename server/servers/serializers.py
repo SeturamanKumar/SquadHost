@@ -13,6 +13,7 @@ class MinecraftServerSerializer(serializers.ModelSerializer):
             'max_players',
             'allow_tlauncher',
             'seed',
+            'ram',
             'server_ip',
             'is_running',
             'status',

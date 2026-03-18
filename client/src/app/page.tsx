@@ -11,6 +11,7 @@ interface ServerInstance {
   server_ip?: string;
   status: string;
   created_at: string;
+  ram: number;
 }
 
 const STAGES = [
@@ -85,6 +86,7 @@ export default function Home() {
   const [maxPlayers, setMaxPlayers] = useState<number>(10);
   const [allowTlauncher, setAllowTlauncher] = useState<boolean>(false);
   const [seed, setSeed] = useState<string>('');
+  const [ram, setRam] = useState<number>(4);
 
   const [status, setStatus] = useState<string>('');
   const [assignedAddress, setAssignedAddressed] = useState<string>('');
@@ -206,6 +208,7 @@ export default function Home() {
           max_players: maxPlayers,
           allow_tlauncher: allowTlauncher,
           seed: seed,
+          ram: ram,
         }),
       });
 
@@ -362,7 +365,7 @@ export default function Home() {
                 <option value="easy">Easy</option>
                 <option value="normal">Normal</option>
                 <option value="hard">Hard</option>
-              </select>
+            </select>
 
               <input 
                 type="number"
@@ -374,6 +377,16 @@ export default function Home() {
                 required
                 style={{ padding: '0.75rem', borderRadius: '4px', marginRight: '5px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
               />
+
+            <select 
+              value ={ram}
+              onChange={(e) => setRam(parseInt(e.target.value))}
+              style={{ padding: '0.75rem', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}>
+              <option value={2}>2GB RAM - Small server (1-4 Players) ~$0.02/hr</option>
+              <option value={4}>4GB - Medium (4-10 Players) ~0.04$/hour</option>
+              <option value={8}>8GB - Large (10-20 Players) ~0.08$/hour</option>
+              <option value={16}>16GB - Extra Large (Modded or for upto 40 Players) ~0.17$/hour</option>
+            </select>
 
           </div>
 
@@ -446,6 +459,7 @@ export default function Home() {
                           <span>Version: {server.mc_version}</span>
                           <span>Players: {server.max_players}</span>
                           <span>Difficulty: {server.difficulty}</span>
+                          <span>RAM: {server.ram}GB</span>
                         </div>
                         <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: server.is_running ? '#4caf50' : '#f44336' }}></div>

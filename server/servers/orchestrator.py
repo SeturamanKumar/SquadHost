@@ -21,6 +21,7 @@ def orchestrate_server_action(server_id, action="START"):
                 "max_players": server.max_players,
                 "allow_tlauncher": server.allow_tlauncher,
                 "seed": server.seed,
+                "ram": server.ram,
             })
         }
 
