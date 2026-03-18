@@ -7,4 +7,5 @@ urlpatterns = [
     path('list/', views.list_servers, name='list-server'),
     path('delete/', views.delete_servers, name='delete-server'),
     path('webhook/status', views.webhook_update_status, name='webhook-update-status'),
+    path('upload-world/', views.upload_world, name='upload-world'),
 ]

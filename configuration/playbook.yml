@@ -90,6 +90,7 @@
           NEXT_PUBLIC_API_URL=http://{{ inventory_hostname }}:8000
           WEBHOOK_SECRET={{ webhook_secret }}
           AWS_REGION={{ ansible_facts['env']['AWS_DEFAULT_REGION'] | default('ap-south-1') }}
+          S3_BACKUP_BUCKET={{ backup_bucket }}
 
     - name: Inject .env into frontend for NEXT.js build context
       copy:

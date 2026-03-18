@@ -7,6 +7,10 @@ from .serializers import MinecraftServerSerializer
 from .orchestrator import orchestrate_server_action
 import os
 import re
+import boto3
+import logging
+
+logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 def create_and_start_server(request):
@@ -132,3 +136,25 @@ def delete_servers(request, pk=None):
 
     server_instance.delete()
     return Response({"message": "Server deleted successfully!"}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def upload_world(request):
+    server_name = request.data.dat('server_name', '')
+    if not re.match(r'^[a-zA-Z0-0_-]+$', servre_name):
+        return Response({"error": "Invalid Server Name"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    world_file = request.FILES.get('world_file')
+    if not world_file:
+        return Response({"error": "No File Provided"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if not world_file.name.endswith('zip'):
+        return Response({"error": "Only .zip files are accepted"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        s3 = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
+        bucket = os.environ.get('S3_BUCKET_NAME')
+        s3.upload_fileobj(world_file, bucket, f"{server.name}.zip")
+        return Response({"message": "World uploaded successfully"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.exception("S3 Upload Failed")
+        return Response({"error", str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -87,6 +87,7 @@ export default function Home() {
   const [allowTlauncher, setAllowTlauncher] = useState<boolean>(false);
   const [seed, setSeed] = useState<string>('');
   const [ram, setRam] = useState<number>(4);
+  const [worldFile, setWorldFile] = useState<File | null>(null);
 
   const [status, setStatus] = useState<string>('');
   const [assignedAddress, setAssignedAddressed] = useState<string>('');
@@ -187,6 +188,24 @@ export default function Home() {
     if(!/^[a-zA-Z0-9_-]+$/.test(serverName)) {
       setStatus('Error: Server name can only container letters, numbers, hyphens and underscores. No spaces');
       return;
+    }
+
+    if(worldFile) {
+      setStatus('Uploading world to S3...')
+      const formData = new formData();
+      formData.append('world_file', worldFile);
+      formData.append('server_name', serverName);
+
+      const uploadRes = await fetch(`${apiUrl}/api/servers/upload-world/`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if(!uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        setStatus(`Upload Error: ${uploadData}`);
+        return;
+      }
     }
 
     setStatus('Booting server... Please wait...');
@@ -406,6 +425,18 @@ export default function Home() {
                 style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}/>
                 Enable Tlauncher support
             </label>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                Custom World (Optional - must be a .zip)
+              </label>
+              <input 
+                type="file"
+                accept=".zip"
+                onChange={(e) => setWorldFile(e.target.files?.[0] ?? null)}
+                style={{ padding: '0.75rem', borderRadius: '4px', border: '1px solid #444', backgroundColor: '#333', color: 'white' }}
+              />
+            </div>
           
           <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }}>
             Launch Server
