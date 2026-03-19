@@ -2,8 +2,11 @@
 
 echo "IGNITING SQUADHOST"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-cd "$SCRIPT_DIR/infrastructure" || { echo "Failed to Find infrastructure directory"; exit 1; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+cd "$SCRIPT_DIR/infrastructure" || {
+  echo "Failed to Find infrastructure directory"
+  exit 1
+}
 
 echo "Step 0: Bootstrapping Terraform State Bucket..."
 
@@ -12,18 +15,18 @@ MASTER_REGION=$AWS_DEFAULT_REGION
 STATE_BUCKET="squadhost-tfstate-${ACCOUNT_ID}"
 
 if ! aws s3api head-bucket --bucket "$STATE_BUCKET" 2>/dev/null; then
-    echo "Creating remote state bucket: $STATE_BUCKET"
-    aws s3 mb "s3://$STATE_BUCKET" --region "$MASTER_REGION"
-    sleep 10
+  echo "Creating remote state bucket: $STATE_BUCKET"
+  aws s3 mb "s3://$STATE_BUCKET" --region "$MASTER_REGION"
+  sleep 10
 else
-    echo "Remote state bucket $STATE_BUCKET already exists"
+  echo "Remote state bucket $STATE_BUCKET already exists"
 fi
 
 echo "Step 1: Provisioning AWS infrastructure"
 terraform init \
-    -backend-config="bucket=$STATE_BUCKET" \
-    -backend-config="key=terraform.tfstate" \
-    -backend-config="region=${MASTER_REGION}"
+  -backend-config="bucket=$STATE_BUCKET" \
+  -backend-config="key=terraform.tfstate" \
+  -backend-config="region=${MASTER_REGION}"
 terraform apply -auto-approve
 
 echo "Step 2: Extracting connection details..."
@@ -49,14 +52,17 @@ export ANSIBLE_HOST_KEY_CHECKING=False
 chmod 400 "$SCRIPT_DIR/infrastructure/squadhost-key.pem"
 
 ansible-playbook -i "$SERVER_IP," "$SCRIPT_DIR/configuration/playbook.yml" \
-    --private-key "$SCRIPT_DIR/infrastructure/squadhost-key.pem" \
-    -u ubuntu \
-    --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC account_id=$ACCOUNT_ID backup_bucket=$BACKUP_BUCKET"
+  --private-key "$SCRIPT_DIR/infrastructure/squadhost-key.pem" \
+  -u ubuntu \
+  --extra-vars "rds_endpoint=$DB_ENDPOINT db_user=$DB_USER db_password=$DB_PASS webhook_secret=$WEBHOOK_SEC account_id=$ACCOUNT_ID backup_bucket=$BACKUP_BUCKET"
 
 echo "Squadhost is officially live! Access the dashboard at http://$SERVER_IP:3000"
 
 echo "Extracting Master IP from Terraform outputs..."
 
-echo $SERVER_IP > /workspace/master_ip.txt
+echo $SERVER_IP >/workspace/master_ip.txt
+cp "$SCRIPT_DIR/infrastructure/squadhost-key.pem" /workspace/squadhost-key.pem
+chmod 400 /workspace/squadhost-key.pem
 
 echo "Master IP saved to master_ip.txt successfully."
+

@@ -43,7 +43,7 @@
         state: present
         filename: docker
       become: yes
-      
+ 
     - name: Install Docker Engine
       apt:
         name: docker-ce
@@ -61,7 +61,7 @@
       stat:
         path: /opt/SquadHost/.git
       register: repo_exists
-    
+ 
     - name: Clone the SquadHost repository
       git:
         repo: 'https://github.com/SeturamanKumar/SquadHost.git'
@@ -113,7 +113,7 @@
     - name: Restore Database from S3 if backup exists
       shell: |
         aws s3 cp s3://{{ backup_bucket }}/backups/db_restore.sql /tmp/restore.sql
-        PGPASSWORD={{ db_password }} pg_restore -h {{ rds_endpoint.split(':')[0] }} -U {{ db_user }} -d postgres /tmp/restore.sql
+        PGPASSWORD={{ db_password }} pg_restore -h {{ rds_endpoint }} -U {{ db_user }} -d postgres /tmp/restore.sql
       when: db_backup_exists.rc == 0
       become: yes
       register: restore_result

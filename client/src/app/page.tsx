@@ -190,9 +190,11 @@ export default function Home() {
       return;
     }
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    
     if(worldFile) {
       setStatus('Uploading world to S3...')
-      const formData = new formData();
+      const formData = new FormData();
       formData.append('world_file', worldFile);
       formData.append('server_name', serverName);
 
@@ -213,7 +215,6 @@ export default function Home() {
     setCopied(false);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
       const response = await fetch(`${apiUrl}/api/servers/create/`, {
         method: 'POST',
         headers: {
