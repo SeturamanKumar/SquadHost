@@ -64,7 +64,7 @@ def restart_server(request):
         return Response({"error": "Server is already running in AWS!"}, status=status.HTTP_400_BAD_REQUEST)
     
     server_instance.status = 'PROVISIONING'
-    server_instance.servre_ip = None
+    server_instance.server_ip = None
     server_instance.save()
 
     success, message = orchestrate_server_action(server_instance.id, "START")
@@ -139,22 +139,22 @@ def delete_servers(request, pk=None):
 
 @api_view(['POST'])
 def upload_world(request):
-    server_name = request.data.dat('server_name', '')
-    if not re.match(r'^[a-zA-Z0-0_-]+$', servre_name):
+    server_name = request.data.get('server_name', '')
+    if not re.match(r'^[a-zA-Z0-9_-]+$', server_name):
         return Response({"error": "Invalid Server Name"}, status=status.HTTP_400_BAD_REQUEST)
     
     world_file = request.FILES.get('world_file')
     if not world_file:
         return Response({"error": "No File Provided"}, status=status.HTTP_400_BAD_REQUEST)
     
-    if not world_file.name.endswith('zip'):
+    if not world_file.name.endswith('.zip'):
         return Response({"error": "Only .zip files are accepted"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         s3 = boto3.client('s3', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
-        bucket = os.environ.get('S3_BUCKET_NAME')
-        s3.upload_fileobj(world_file, bucket, f"{server.name}.zip")
+        bucket = os.environ.get('S3_BACKUP_BUCKET')
+        s3.upload_fileobj(world_file, bucket, f"{server_name}.zip")
         return Response({"message": "World uploaded successfully"}, status=status.HTTP_200_OK)
     except Exception as e:
         logger.exception("S3 Upload Failed")
-        return Response({"error", str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": str(e)}, status=statur.HTTP_500_INTERNAL_SERVER_ERROR)
