@@ -158,10 +158,16 @@ To achieve a true "scale-to-zero" environment, this project utilizes a custom cl
 
 ### 1. The Kamikaze Approach (Cost Optimization)
 The core feature of SquadHost is the "Kamikaze" auto-deletion protocol. Cloud providers bill by the second for running EC2 instances. To minimize this, the architecture is designed to self-destruct when no longer needed.
-* **The Watchdog:** When a server is provisioned, a Python watchdog script (`kamikaze_watchdog.py`) is injected into the worker node via Ansible. This checks for number of Minecraft servers running and if there are exactly 0 servers for 20 minutes. This script starts the Self-Termination.
+* **The Watchdog:** When a server is provisioned, a Python watchdog script (`kamikaze_watchdog.py`) is injected into the worker node via Ansible. This checks for number of Minecraft servers running and if there are exactly 0 servers for 10 minutes. This script starts the Self-Termination.
 * **Inactivity Monitoring:** This script continuously polls the Dockerized Minecraft container via RCON to check the active player count.
-* **The Server Termination:** If the player count remains at exactly 0 for 4 minutes, the script triggers the shutdown sequence and follows the file save procedure.
+* **The Server Termination:** If the player count remains at exactly 0 for 8 minutes, the script triggers the shutdown sequence and follows the file save procedure.
 * **Self-Termination:** The script safely stops the container, zips the world files, pushes the backup to AWS S3, and finally uses the AWS SDK to invoke the `ec2:TerminateInstances` permission, physically deleting its own host server from your AWS account to immediately halt billing.
+
+### Master Server Self-Termination
+The master EC2 instance (running the Django backend and Next.js frontend) runs a separate watchdog script. It continuously monitors if any Minecraft servers are running. If no Minecraft servers are active for 10 minutes, it:
+* Backs up the PostgreSQL database to S3
+* Backs up all world files to S3
+* Terminates itself to achieve true scale-to-zero billing (no cost when idle)
 
 ### 2. S3 State Hydration
 Because the worker nodes are constantly being deleted, the architecture is completely stateless. 
