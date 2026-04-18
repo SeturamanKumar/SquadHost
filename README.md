@@ -3,7 +3,7 @@
 <details open>
 <summary><strong>💡 About the Project</strong></summary>
 
-SquadHost is an open-source, self-hosted Aternos clone. I built this project to solve a specific problem: wanting complete control over a Minecraft server (soon modded) without paying 24/7 cloud hosting fees or waiting in free-tier queues. 
+SquadHost is an open-source, self-deployed on AWS, Aternos clone. I built this project to solve a specific problem: wanting complete control over a Minecraft server (soon modded) without paying 24/7 cloud hosting fees or waiting in free-tier queues. 
 
 Beyond solving a hosting problem, this project served as a practical proving ground for my engineering skills. I utilized it to actively learn Next.js and modern frontend development from scratch, while simultaneously designing a robust Python/Django backend and a highly automated DevOps pipeline.
 
