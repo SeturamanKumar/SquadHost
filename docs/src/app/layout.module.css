@@ -1,0 +1,37 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--bg-color, #111);
+  color: var(--text-color, #eee);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+  padding: 16px 64px 48px 64px;
+  scroll-behavior: smooth;
+}
+
+.content {
+  width: 100%;
+  max-width: 800px; /* slightly wider than your portfolio’s 672px for code blocks */
+  margin: 0 auto;
+}
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .main {
+    padding: 24px 20px 120px 20px;
+  }
+}
