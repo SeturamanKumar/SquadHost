@@ -1,6 +1,6 @@
 terraform {
 
-  required_version = "= 1.15.6"
+  required_version = ">= 1.15.6"
 
   required_providers {
 
