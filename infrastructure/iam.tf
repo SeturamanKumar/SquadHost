@@ -172,7 +172,7 @@ resource "aws_iam_role_policy" "ec2_worker_s3_policy" {
     Statement = [{
       # World save permission and self-termination
       Effect   = "Allow"
-      Action   = ["s3:Putobject", "s3:GetObject", "s3:ListBucket", "ec2:TerminateInstances"]
+      Action   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket", "ec2:TerminateInstances"]
       Resource = "*"
     }]
   })
