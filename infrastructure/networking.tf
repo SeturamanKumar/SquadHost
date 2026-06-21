@@ -173,6 +173,7 @@ resource "aws_security_group" "ec2_sg" {
 
 }
 
+# ------------------------------------------------- TO BE REMOVED ----------------------------------------
 # RDS security group
 resource "aws_security_group" "rds_sg" {
 
@@ -200,6 +201,32 @@ resource "aws_security_group" "rds_sg" {
   tags = {
 
     Name       = "squadhost-rds-sg"
+    project    = "squadhost"
+    managed_by = "terraform"
+
+  }
+
+}
+# -----------------------------------------------------------------------------------------------------------------
+
+# Worker security group, zero inbound rules, only outbound for playit.gg
+resource "aws_security_group" "worker_sg" {
+
+  name   = "squadhost-worker-sg"
+  vpc_id = aws_vpc.main.id
+
+  egress {
+
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+  tags = {
+
+    Name       = "squadhost-worker-sg"
     project    = "squadhost"
     managed_by = "terraform"
 

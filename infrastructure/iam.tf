@@ -46,9 +46,16 @@ resource "aws_iam_role_policy" "kamikaze_policy" {
       },
       {
         # Self-Termination and RDS takedown for kamikaze script
-        Action   = ["ec2:TerminateInstances", "rds:DeleteDBInstance", "ec2:DescribeInstances"]
+        Action   = ["ec2:TerminateInstances", "ec2:DescribeInstances"]
         Effect   = "Allow"
         Resource = "*"
+      },
+      {
+        # ------------------------------ TO BE REMOVED -------------------------
+        Action   = ["rds:DeleteDBInstance"]
+        Effect   = "Allow"
+        Resource = "*"
+        # ----------------------------------------------------------------------
       },
       {
         # Invoke Lambda funcitons during shutting down sequence
@@ -129,6 +136,12 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
         Effect   = "Allow"
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        # DynamoDB create/delete/restart
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Resource = aws_dynamodb_table.servers.arn
       }
     ]
   })
@@ -229,12 +242,20 @@ resource "aws_iam_role_policy" "lambda_s3_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      # Cloudwatch logging only
-      Effect   = "Allow"
-      Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
-      Resource = "arn:aws:logs:*:*:*"
-    }]
+    Statement = [
+      {
+        # Cloudwatch logging only
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        # Update DynamoDB of world saving
+        Effect  = "Allow"
+        Action  = ["dynamodb:UpdateItem"]
+        Resouce = aws_dynamodb_table.servers.arn
+      }
+    ]
   })
 
 }

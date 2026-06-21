@@ -20,6 +20,49 @@ resource "aws_s3_bucket" "squadhost_backups" {
 
 }
 
+
+# DynamoDB creation
+resource "aws_dynamodb_table" "servers" {
+
+  name         = "squadhost-servers"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key  = "owner_id"
+  range_key = "server_id"
+
+  attribute {
+
+    name = "owner_id"
+    type = "S"
+
+  }
+
+  attribute {
+
+    name = "server_id"
+    type = "S"
+
+  }
+
+  global_secondary_index {
+
+    name            = "server_id-index"
+    hash_key        = "server_id"
+    projection_type = "KEYS_ONLY"
+
+  }
+
+  tags = {
+
+    Name       = "squadhost-servers"
+    project    = "squdhost"
+    managed_by = "terraform"
+
+  }
+
+}
+
+# ---------------------------------------- TO BE REMOVED ------------------------------------
 # Create RDS subnet group
 resource "aws_db_subnet_group" "rds_subnet_group" {
 
@@ -60,6 +103,7 @@ resource "aws_db_instance" "postgres" {
   }
 
 }
+# ----------------------------------------------------------------------------------------------
 
 # S3 bucket notification, (world save completion signal)
 resource "aws_s3_bucket_notification" "bucket_notifications" {
