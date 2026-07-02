@@ -515,7 +515,7 @@ send_status "BOOTING"
 # Stops the Minecraft server after 0 player activity for more than 6 minutes, Zips the world and saves it to S3 and updates server status
 cat << 'KAMIKAZE_EOF' > /minecraft/kamikaze.sh
 #!/bin/bash
-set -euo pipefailA
+set -euo pipefail
 source /minecraft/server.env
 
 INACTIVE_MINUTES=0
