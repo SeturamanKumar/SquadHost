@@ -12,8 +12,10 @@ logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource("dynamodb")
 ec2_client = boto3.client("ec2")
+s3_client = boto3.client("s3")
 
 TABLE_NAME = os.environ["SERVERS_TABLE"]
+S3_BUCKET = os.environ["S3_BACKUP_BUCKET"]
 table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -91,6 +93,29 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "server_id": server_id,
         }))
 
+    # S3 world deletion
+    world_key = f"worlds/{owner_id}/{server_id}/world.zip"
+    try:
+        s3_client.delete_object(Bucket=S3_BUCKET, Key=world_key)
+        logger.info(json.dumps({
+            "event": "delete_server_s3_world_purged",
+            "owner_id": owner_id,
+            "server_id": server_id,
+            "world_key": world_key,
+        }))
+
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code")
+        logger.warning(json.dumps({
+            "event": "delete_server_s3_purge_failed",
+            "owner_id": owner_id,
+            "server_id": server_id,
+            "world_key": world_key,
+            "error_code": error_code,
+            "error": str(exc),
+        }))
+
+    # dynamodb record deletion
     try:
         table.delete_item(
             Key={"owner_id": owner_id, "server_id": server_id},
