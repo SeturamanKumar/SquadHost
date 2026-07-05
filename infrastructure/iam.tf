@@ -142,6 +142,12 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
         Effect   = "Allow"
         Action   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
         Resource = aws_dynamodb_table.servers.arn
+      },
+      {
+        # for delete_server function
+        Effect   = "Allow"
+        Action   = ["s3:DeleteObject"]
+        Resource = "${aws_s3_bucket.squadhost_backups.arn}/worlds/*"
       }
     ]
   })
