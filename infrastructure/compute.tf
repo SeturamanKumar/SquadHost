@@ -100,17 +100,22 @@ resource "aws_lambda_function" "create_server_lambda" {
   runtime          = "python3.12"
   source_code_hash = data.archive_file.create_server_zip.output_base64sha256
   timeout          = 300
+  layers           = [aws_lambda_layer_version.worker_provisioning.arn]
 
   environment {
 
     variables = {
 
+      SERVERS_TABLE      = aws_dynamodb_table.servers.name
       S3_BACKUP_BUCKET   = aws_s3_bucket.squadhost_backups.bucket
       WORKER_AMI_ID      = data.aws_ami.ubuntu.id
       SECURITY_GROUP_ID  = aws_security_group.ec2_sg.id
       SUBNET_ID          = aws_subnet.public_1.id
-      DJANGO_WEBHOOK_URL = "http://${aws_instance.squadhost_server.public_ip}:8000/api/servers/webhook/status"
-      WEBHOOK_SECRET     = random_password.webhook_secret.result
+      INSTANCE_PROFILE   = aws_iam_instance_profile.ec2_worker_profile.name
+      AWS_DEPLOY_REGION  = var.aws_region
+      INSTANCE_PROFILE   = aws_iam_instance_profile.ec2_worker_profile.name
+      DJANGO_WEBHOOK_URL = "REPLACE_WITH_API_GATEWAY_STATUS_WEBHOOK_URL" # TODO: API gateway doesn't exist yet
+      WEBHOOK_SECRET     = "REPLACE_WITH_SECRETS_MANAGER_SECRET_NAME"    # TODO: secrets.tf has no playit.gg secret yet
 
     }
 
