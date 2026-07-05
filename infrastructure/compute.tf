@@ -177,3 +177,22 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn    = aws_s3_bucket.squadhost_backups.arn
 
 }
+
+# Create zip of shared lambda layer
+data "archive_file" "worker_provisioning_layer_zip" {
+
+  type        = "zip"
+  source_dir  = "${path.module}/lambdas/layers/worker_provisioning"
+  output_path = "${path.module}/lambdas/layers/worker_provisioning.zip"
+
+}
+
+# store the zipped layer as common code for create and restart server
+resource "aws_lambda_layer_version" "worker_provisioning" {
+
+  filename            = data.archive_file.worker_provisioning_layer_zip.output_path
+  layer_name          = "squadhost-worker-provisioning"
+  source_code_hash    = data.archive_file.worker_provisioning_layer_zip.output_base64sha256
+  compatible_runtimes = ["python3.12"]
+
+}
