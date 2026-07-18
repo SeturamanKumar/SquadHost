@@ -9,6 +9,8 @@ from typing import Any, Dict
 import boto3
 from botocore.exceptions import ClientError
 
+from squadhost_common.user_data import INSTANCE_TYPE_MAP, build_user_data
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -26,145 +28,6 @@ AWS_DEPLOY_REGION = os.environ["AWS_DEPLOY_REGION"]
 PLAYITGG_SECRET_NAME = os.environ["PLAYITGG_SECRET_NAME"]
 
 table = dynamodb.Table(TABLE_NAME)
-
-INSTANCE_TYPE_MAP: Dict[int, str] = {
-    2: "t3a.small",
-    4: "t3a.medium",
-    8: "t3a.large",
-    16: "t3a.xlarge",
-}
-
-# SigV4 signing helper
-_SIGV4_SCRIPT = """\
-import hashlib
-import hmac
-import json
-import sys
-import urllib.request
-from datetime import datetime, timezone
-from urllib.parse import urlparse
-
-def _fetch_credentials():
-
-    token_req = urllib.request.Request(
-        "http://169.254.169.254/latest/api/token",
-        method="PUT",
-        headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"},
-    )
-
-    with urllib.request.urlopen(token_req, timeout=5) as r:
-        imds_token = r.read().decode().strip()
-
-    role_req = urllib.request.Request(
-        "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
-        headers={"X-aws-ec2-metadata-token": imds_token},
-    )
-
-    with urllib.request.urlopen(role_req, timeout=5) as r:
-        role_name = r.read().decode().strip()
-
-    creds_req = urllib.request.Request(
-        f"http://169.254.169.254/latest/meta-data/iam/security-credentials/{role_name}",
-        headers={"X-aws-ec2-metadata-token": imds_token},
-    )
-
-    with urllib.request.urlopen(creds_req, timeout=5) as r:
-        return json.loads(r.read().decode())
-
-def _hmac_sha256(key, msg):
-
-    return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
-
-def _signing_key(secret_key, date, region, service):
-
-    # SigV4 key derivation chain:
-    # kDate    = HMAC("AWS4" + kSecret, Date)
-    # kRegion  = HMAC(kDate, Region)
-    # kService = HMAC(kRegion, Service)
-    # kSigning = HMAC(kService, "aws4_request")
-    k = _hmac_sha256(f"AWS4{secret_key}".encode("utf-8"), date)
-    k = _hmac_sha256(k, region)
-    k = _hmac_sha256(k, service)
-    return _hmac_sha256(k, "aws4_request")
-
-def signed_post(url, payload, region):
-
-    creds = _fetch_credentials()
-    now = datetime.now(timezone.utc)
-    amz_date = now.strftime("%Y%m%dT%H%M%SZ")
-    date_stamp = now.strftime("%Y%m%d")
-
-    parsed = urlparse(url)
-    host = parsed.netloc
-    uri = parsed.path or "/"
-    payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-    canonical_headers = (
-        f"content-type:application/json\\n"
-        f"host:{host}\\n"
-        f"x-amz-date:{amz_date}\\n"
-        f"x-amz-security-token:{creds['Token']}\\n"
-    )
-    signed_headers = "content-type;host;x-amz-date;x-amz-security-token"
-
-    canonical_request = "\\n".join([
-        "POST",
-        uri,
-        "",
-        canonical_headers,
-        signed_headers,
-        payload_hash,
-    ])
-
-    scope = f"{date_stamp}/{region}/execute-api/aws4-request"
-    string_to_sign = "\\n".join([
-        "AWS4-HMAC-SHA256",
-        amz_date,
-        scope,
-        hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
-    ])
-
-    sig = hmac.new(
-        _signing_key(creds["SecretAccessKey"], date_stamp, region, "execute-api"),
-        string_to_sign.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
-
-    auth = urllib.request.Request(
-        url,
-        data=payload.encode("utf-8"),
-        method="POST",
-        headers={
-            "Content-Type": "application/json",
-            "X-Amz-Date": amz_date,
-            "X-Amz-Security-Token": creds["Token"],
-            "Authorization": auth,
-        },
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            print(f"[sigv4] POST {url} -> {r.status}", flush=True)
-            return r.status
-
-    except urllib.error.HTTPError as exc:
-        print(f"[sigv4] HTTP {exc.code}: {exc.reason}", flush=True)
-        return exc.code
-
-    except Exception as exc:
-        print(f"[sigv4] request failed: {exc}", flush=True)
-        return 500
-
-if __name__ == "__main__":
-
-    if len(sys.argv) != 4:
-        print("Usage: sigv4_request.py <URL> <JSON_PAYLAOD> <REGION>", file=sys.stderr)
-        sys.exit(1)
-
-    _, url, payload, region = sys.argv
-    sys.exit(0 if signed_post(url, payload, region) < 400 else 1)
-
-"""
 
 # Handles POST request for /servers, Will validate input, write to the DB, Create the EC2 with minecraft docker image
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -192,6 +55,9 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         ram_tier = int(body.get("ram_tier", 4))
 
     except (TypeError, ValueError):
+        return _response(400, {"error": "ram_tier must be a number"})
+
+    if ram_tier not in INSTANCE_TYPE_MAP:
         return _response(400, {"error": f"ram_tier must be one of {list(INSTANCE_TYPE_MAP.keys()}"})
 
     mc_version: str = body.get("mc_version", "LATEST")
@@ -252,7 +118,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return _response(500, {"error": "Failed to create server record"})
 
     # EC2 with Minecraft Server Launch
-    memory_mb = ram_tier * 1024 - 512
     online_mode = "FALSE" if allow_tlauncher else "TRUE"
     s3_world_key = f"worlds/{owner_id}/{server_id}/world.zip"
 
@@ -264,7 +129,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         max_players=max_players,
         online_mode=online_mode,
         seed=seed,
-        memory_mb=memory_mb,
+        ram_tier=ram_tier,
         s3_bucket=S3_BUCKET,
         s3_world_key=s3_world_key,
         webhook_url=WEBHOOK_URL,
