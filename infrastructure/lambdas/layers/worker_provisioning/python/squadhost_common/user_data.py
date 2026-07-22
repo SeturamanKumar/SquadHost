@@ -116,7 +116,12 @@ def signed_post(url, payload, region):
         hashlib.sha256,
     ).hexdigest()
 
-    auth = urllib.request.Request(
+    auth = (
+        f"AWS4-HMAC-SHA256 Credential={creds['AccessKeyId']}/{scope},"
+        f"SignedHeaders={signed_headers}, Signature={sig}"
+    )
+
+    req = urllib.request.Request(
         url,
         data=payload.encode("utf-8"),
         method="POST",
