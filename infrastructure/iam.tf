@@ -265,3 +265,51 @@ resource "aws_iam_role_policy" "lambda_s3_policy" {
   })
 
 }
+
+# IAM role for list_servers/get_server
+resource "aws_iam_role" "lambda_read_role" {
+
+  name = "squadhost-lambda-read-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+
+  tags = {
+
+    Name       = "squadhost-lambda-read-role"
+    project    = "squadhost"
+    managed_by = "terraform"
+
+  }
+
+}
+
+# IAM policies for list_servers/get_server
+resource "aws_iam_role_policy" "lambda_read_policy" {
+
+  name = "squadhost-lambda-read-policy"
+  role = aws_iam_role.lambda_read_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:Query", "dynamodb:GetItem"]
+        Resource = aws_dynamodb_table.servers.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "arn:aws:logs:${var.aws_region}:*:*"
+      }
+    ]
+  })
+
+}
