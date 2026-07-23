@@ -81,7 +81,7 @@ resource "random_password" "webhook_secret" {
 
 }
 
-# create zip of lambda function
+# create zip of lambda function (create_server)
 data "archive_file" "create_server_zip" {
 
   type        = "zip"
@@ -131,7 +131,7 @@ resource "aws_lambda_function" "create_server_lambda" {
 
 }
 
-# create zip of lambda function
+# create zip of lambda function (status_updater)
 data "archive_file" "status_updater_zip" {
 
   type        = "zip"
@@ -140,7 +140,7 @@ data "archive_file" "status_updater_zip" {
 
 }
 
-# Create server lambda function
+# status updater lambda function
 resource "aws_lambda_function" "status_updater_lambda" {
 
   filename         = data.archive_file.status_updater_zip.output_path
@@ -199,5 +199,82 @@ resource "aws_lambda_layer_version" "worker_provisioning" {
   layer_name          = "squadhost-worker-provisioning"
   source_code_hash    = data.archive_file.worker_provisioning_layer_zip.output_base64sha256
   compatible_runtimes = ["python3.12"]
+
+}
+
+# Create zip of lambda_function (list_servers)
+data "archive_file" "list_servers_zip" {
+
+  type        = "zip"
+  source_dir  = "${path.module}/lambdas/list_servers"
+  output_path = "${path.module}/lambdas/list_servers.zip"
+
+}
+
+# List server lambda function
+resource "aws_lambda_function" "list_servers_lambda" {
+
+  filename         = data.archive_file.list_servers_zip.output_path
+  function_name    = "squadhost_list_servers"
+  role             = aws_iam_role.lambda_read_role.arn
+  handler          = "lambda_function.handler_handler"
+  runtime          = "python3.12"
+  source_code_hash = data.archive_file.list_servers_zip.output_base64sha256
+  timeout          = 10
+
+
+  environment {
+
+    variables = {
+      SERVERS_TABLE = aws_dynamodb_table.servers.name
+    }
+
+  }
+
+  tags = {
+
+    Name       = "squadhost-list-servers"
+    project    = "squadhost"
+    managed_by = "terraform"
+
+  }
+
+}
+
+# Create zip of lamdba_function (get_server)
+data "archive_file" "get_server_zip" {
+
+  type        = "zip"
+  source_dir  = "${path.module}/lambdas/get_server"
+  output_path = "${path.module}/lambdas/get_server.zip"
+
+}
+
+# Get server lambda function
+resource "aws_lambda_function" "get_server_lambda" {
+
+  filename         = data.archive_file.get_server_zip.output_path
+  function_name    = "squadhost_get_server"
+  role             = aws_iam_role.lambda_read_role.arn
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.12"
+  source_code_hash = data.archive_file.get_server_zip.output_base64sha256
+  timeout          = 10
+
+  environment {
+
+    variables = {
+      SERVERS_TABLE = aws_dynamodb_table.servers.name
+    }
+
+  }
+
+  tags = {
+
+    Name       = "squadhost-get-server"
+    project    = "squadhost"
+    managed_by = "terraform"
+
+  }
 
 }
