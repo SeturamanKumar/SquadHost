@@ -278,3 +278,42 @@ resource "aws_lambda_function" "get_server_lambda" {
   }
 
 }
+
+# Create zip of lambda_function (delete_server)
+data "archive_file" "delete_server_zip" {
+
+  type        = "zip"
+  source_dir  = "${path.module}/lambdas/delete_server"
+  output_path = "${path.module}/lambdas/delete_server.zip"
+
+}
+
+# Delete server lambda function
+resource "aws_lambda_function" "delete_server" {
+
+  filename         = data.archive_file.delete_server_zip.output_path
+  function_name    = "squadhost_delete_server"
+  role             = aws_iam_role.lambda_ec2_role.arn
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.12"
+  source_code_hash = data.archive_file.delete_server_zip.output_base64sha256
+  timeout          = 30
+
+  environment {
+
+    variables = {
+      SERVERS_TABLE    = aws_dynamodb_table.servers.name
+      S3_BACKUP_BUCKET = aws_s3_bucket.squadhost_backups.bucket
+    }
+
+  }
+
+  tags = {
+
+    Name       = "squadhost-delete-server"
+    project    = "squadhost"
+    managed_by = "terraform"
+
+  }
+
+}
